@@ -28,6 +28,7 @@ import com.ververica.cdc.connectors.oceanbase.table.StartupMode;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
+import java.util.Properties;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -56,6 +57,7 @@ public class OceanBaseSource {
         // snapshot reading config
         private String hostname;
         private Integer port;
+        private Properties jdbcProperties;
 
         // incremental reading config
         private String logProxyHost;
@@ -120,6 +122,11 @@ public class OceanBaseSource {
 
         public Builder<T> port(int port) {
             this.port = port;
+            return this;
+        }
+
+        public Builder<T> jdbcProperties(Properties jdbcProperties) {
+            this.jdbcProperties = jdbcProperties;
             return this;
         }
 
@@ -231,7 +238,7 @@ public class OceanBaseSource {
             obReaderConfig.setStartTimestamp(startupTimestamp);
             obReaderConfig.setTimezone(serverTimeZone);
 
-            return new OceanBaseRichSourceFunction<T>(
+            return new OceanBaseRichSourceFunction<>(
                     StartupMode.INITIAL.equals(startupMode),
                     username,
                     password,
@@ -240,8 +247,10 @@ public class OceanBaseSource {
                     tableName,
                     tableList,
                     connectTimeout,
+                    serverTimeZone,
                     hostname,
                     port,
+                    jdbcProperties,
                     logProxyHost,
                     logProxyPort,
                     clientConf,

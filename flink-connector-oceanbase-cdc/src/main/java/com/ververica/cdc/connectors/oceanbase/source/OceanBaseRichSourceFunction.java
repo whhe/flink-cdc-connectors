@@ -51,6 +51,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -81,8 +82,10 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final String tableName;
     private final String tableList;
     private final Duration connectTimeout;
+    private final String serverTimeZone;
     private final String hostname;
     private final Integer port;
+    private final Properties jdbcProperties;
     private final String logProxyHost;
     private final int logProxyPort;
     private final ClientConf logProxyClientConf;
@@ -108,8 +111,10 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             String tableName,
             String tableList,
             Duration connectTimeout,
+            String serverTimeZone,
             String hostname,
             Integer port,
+            Properties jdbcProperties,
             String logProxyHost,
             int logProxyPort,
             ClientConf logProxyClientConf,
@@ -123,8 +128,10 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.tableName = tableName;
         this.tableList = tableList;
         this.connectTimeout = checkNotNull(connectTimeout);
+        this.serverTimeZone = checkNotNull(serverTimeZone);
         this.hostname = hostname;
         this.port = port;
+        this.jdbcProperties = jdbcProperties;
         this.logProxyHost = checkNotNull(logProxyHost);
         this.logProxyPort = checkNotNull(logProxyPort);
         this.logProxyClientConf = checkNotNull(logProxyClientConf);
@@ -169,7 +176,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         return resolvedTimestamp == -1 && snapshot;
     }
 
-    private OceanBaseConnection getSnapshotConnection() {
+    private OceanBaseConnection getSnapshotConnection() throws SQLException {
         if (snapshotConnection == null) {
             snapshotConnection =
                     new OceanBaseConnection(
@@ -178,6 +185,8 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             username,
                             password,
                             connectTimeout,
+                            serverTimeZone,
+                            jdbcProperties,
                             getClass().getClassLoader());
         }
         return snapshotConnection;
@@ -214,23 +223,12 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                 && StringUtils.isNotBlank(databaseName)
                 && StringUtils.isNotBlank(tableName)) {
             try {
-                String sql =
-                        String.format(
-                                "SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES "
-                                        + "WHERE TABLE_TYPE='BASE TABLE' and TABLE_SCHEMA REGEXP '%s' and TABLE_NAME REGEXP '%s'",
-                                databaseName, tableName);
-                getSnapshotConnection()
-                        .query(
-                                sql,
-                                rs -> {
-                                    while (rs.next()) {
-                                        localTableSet.add(
-                                                String.format(
-                                                        "%s.%s", rs.getString(1), rs.getString(2)));
-                                    }
-                                });
+                LOG.info("Connection database mode: {}", getSnapshotConnection().getDatabaseMode());
+                List<String> tables = getSnapshotConnection().getTables(databaseName, tableName);
+                LOG.info("Pattern matched tables: {}", tables);
+                localTableSet.addAll(tables);
             } catch (SQLException e) {
-                LOG.error("Query database and table name failed", e);
+                LOG.error("Query table list by 'databaseName' and 'tableName' failed", e);
                 throw new FlinkRuntimeException(e);
             }
         }
@@ -239,6 +237,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             throw new FlinkRuntimeException("No valid table found");
         }
 
+        LOG.info("Table list: {}", localTableSet);
         this.tableSet = localTableSet;
         this.obReaderConfig.setTableWhiteList(
                 localTableSet.stream()
@@ -259,14 +258,18 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         OceanBaseRecord.SourceInfo sourceInfo =
                 new OceanBaseRecord.SourceInfo(
                         tenantName, databaseName, tableName, resolvedTimestamp);
-
-        String fullName = String.format("`%s`.`%s`", databaseName, tableName);
-        String selectSql = "SELECT * FROM " + fullName;
         try {
+            String databaseMode = getSnapshotConnection().getDatabaseMode();
+            String fullName;
+            if ("mysql".equalsIgnoreCase(databaseMode)) {
+                fullName = String.format("`%s`.`%s`", databaseName, tableName);
+            } else {
+                fullName = String.format("%s.%s", databaseName, tableName);
+            }
             LOG.info("Start to read snapshot from {}", fullName);
             getSnapshotConnection()
                     .query(
-                            selectSql,
+                            "SELECT * FROM " + fullName,
                             rs -> {
                                 ResultSetMetaData metaData = rs.getMetaData();
                                 while (rs.next()) {
@@ -287,7 +290,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             });
             LOG.info("Read snapshot from {} finished", fullName);
         } catch (SQLException e) {
-            LOG.error("Read snapshot from table " + fullName + " failed", e);
+            LOG.error("Read snapshot by table failed", e);
             throw new FlinkRuntimeException(e);
         }
     }

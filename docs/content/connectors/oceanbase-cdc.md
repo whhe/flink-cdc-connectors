@@ -251,6 +251,13 @@ The OceanBase CDC Connector contains some options for both sql and stream api as
                 <td>String</td>
                 <td>Working mode of `obcdc` in LogProxy, can be `storage` or `memory`.</td>
             </tr>
+            <tr>
+                <td>jdbc.properties.*</td>
+                <td>optional</td>
+                <td style="word-wrap: break-word;">(none)</td>
+                <td>String</td>
+                <td>Option to pass custom JDBC URL properties. User can pass custom properties like 'jdbc.properties.supportLobLocator' = 'false'.</td>
+            </tr>
         </tbody>
     </table>
 </div>

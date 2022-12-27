@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,6 +59,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
 
     private final String hostname;
     private final Integer port;
+    private final Properties jdbcProperties;
 
     private final String logProxyHost;
     private final Integer logProxyPort;
@@ -90,6 +92,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
             Duration connectTimeout,
             String hostname,
             Integer port,
+            Properties jdbcProperties,
             String logProxyHost,
             Integer logProxyPort,
             String logProxyClientId,
@@ -109,6 +112,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
         this.connectTimeout = connectTimeout;
         this.hostname = hostname;
         this.port = port;
+        this.jdbcProperties = jdbcProperties;
         this.logProxyHost = checkNotNull(logProxyHost);
         this.logProxyPort = checkNotNull(logProxyPort);
         this.logProxyClientId = logProxyClientId;
@@ -154,6 +158,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         .connectTimeout(connectTimeout)
                         .hostname(hostname)
                         .port(port)
+                        .jdbcProperties(jdbcProperties)
                         .logProxyHost(logProxyHost)
                         .logProxyPort(logProxyPort)
                         .logProxyClientId(logProxyClientId)
@@ -211,6 +216,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         connectTimeout,
                         hostname,
                         port,
+                        jdbcProperties,
                         logProxyHost,
                         logProxyPort,
                         logProxyClientId,
@@ -270,6 +276,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                 connectTimeout,
                 hostname,
                 port,
+                jdbcProperties,
                 logProxyHost,
                 logProxyPort,
                 logProxyClientId,

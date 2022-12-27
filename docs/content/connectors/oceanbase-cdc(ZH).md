@@ -118,6 +118,7 @@ logproxy.client.id | 否 | 按规则生成 | String |	OceanBase日志代理服�
 rootserver-list | 是 | 无 | String | OceanBase root 服务器列表，服务器格式为 `ip:rpc_port:sql_port`，<br>多个服务器地址使用英文分号 `;` 隔开，OceanBase 社区版本必填。
 config-url | 否 |  无 | String |	从配置服务器获取服务器信息的 url, OceanBase 企业版本必填。
 working-mode | 否 | storage | String | 日志代理中 `obcdc` 的工作模式 , 可以是 `storage` 或 `memory`。
+jdbc.properties.* | 否 | 无 | String | 传递自定义 JDBC URL 属性的选项。用户可以传递自定义属性，如 'jdbc.properties.supportLobLocator' = 'false'。
 
 ## 支持的元数据
 

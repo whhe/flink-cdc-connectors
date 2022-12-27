@@ -142,13 +142,12 @@ public class OceanBaseTestBase extends TestLogger {
     }
 
     public static String getJdbcUrl(String databaseName) {
-        return "jdbc:mysql://"
+        return "jdbc:oceanbase://"
                 + getObServerHost()
                 + ":"
                 + getObServerSqlPort()
                 + "/"
-                + databaseName
-                + "?useSSL=false";
+                + databaseName;
     }
 
     public static String getRsList() {

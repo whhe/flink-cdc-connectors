@@ -24,6 +24,9 @@ import org.apache.flink.table.connector.source.DynamicTableSource;
 import org.apache.flink.table.factories.DynamicTableSourceFactory;
 import org.apache.flink.table.factories.FactoryUtil;
 
+import com.ververica.cdc.debezium.table.DebeziumOptions;
+import com.ververica.cdc.debezium.utils.JdbcUrlUtils;
+
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
@@ -158,7 +161,8 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
     public DynamicTableSource createDynamicTableSource(Context context) {
         final FactoryUtil.TableFactoryHelper helper =
                 FactoryUtil.createTableFactoryHelper(this, context);
-        helper.validate();
+        helper.validateExcept(
+                DebeziumOptions.DEBEZIUM_OPTIONS_PREFIX, JdbcUrlUtils.PROPERTIES_PREFIX);
 
         ResolvedSchema physicalSchema = context.getCatalogTable().getResolvedSchema();
 
@@ -200,6 +204,7 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                 connectTimeout,
                 hostname,
                 port,
+                JdbcUrlUtils.getJdbcProperties(context.getCatalogTable().getOptions()),
                 logProxyHost,
                 logProxyPort,
                 logProxyClientId,

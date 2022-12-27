@@ -43,22 +43,16 @@ under the License.
 
         <!-- OceanBase Log Client -->
         <dependency>
-            <groupId>com.oceanbase.logclient</groupId>
-            <artifactId>logproxy-client</artifactId>
+            <groupId>com.oceanbase</groupId>
+            <artifactId>oblogclient-logproxy</artifactId>
             <version>${oblogclient.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>logback-classic</artifactId>
-                    <groupId>ch.qos.logback</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
-        <!-- The MySQL JDBC driver for reading snapshot-->
+        <!-- OceanBase JDBC Driver -->
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.47</version>
+            <groupId>com.oceanbase</groupId>
+            <artifactId>oceanbase-client</artifactId>
+            <version>${obclient.version}</version>
         </dependency>
 
         <!-- test dependencies on Flink -->
