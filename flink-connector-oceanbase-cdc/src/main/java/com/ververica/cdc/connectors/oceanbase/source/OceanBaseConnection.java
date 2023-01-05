@@ -34,9 +34,10 @@ import java.util.stream.Collectors;
 /** {@link JdbcConnection} extension to be used with OceanBase server. */
 public class OceanBaseConnection extends JdbcConnection {
 
-    private static final String DRIVER_CLASS_NAME = "com.oceanbase.jdbc.Driver";
     private static final Properties DEFAULT_JDBC_PROPERTIES = initializeDefaultJdbcProperties();
-    private static final String JDBC_URL_PATTERN =
+    private static final String MYSQL_URL_PATTERN =
+            "jdbc:mysql://${hostname}:${port}/?connectTimeout=${connectTimeout}&serverTimezone=${serverTimezone}";
+    private static final String OB_URL_PATTERN =
             "jdbc:oceanbase://${hostname}:${port}/?connectTimeout=${connectTimeout}&serverTimezone=${serverTimezone}";
 
     private String databaseMode;
@@ -48,11 +49,12 @@ public class OceanBaseConnection extends JdbcConnection {
             String password,
             Duration timeout,
             String serverTimeZone,
+            String jdbcDriver,
             Properties jdbcProperties,
             ClassLoader classLoader) {
         super(
                 config(hostname, port, user, password, timeout, serverTimeZone),
-                factory(jdbcProperties, classLoader));
+                factory(jdbcDriver, jdbcProperties, classLoader));
     }
 
     private static Configuration config(
@@ -72,13 +74,15 @@ public class OceanBaseConnection extends JdbcConnection {
                 .build();
     }
 
-    private static String formatJdbcUrl(Properties jdbcProperties) {
+    private static String formatJdbcUrl(String jdbcDriver, Properties jdbcProperties) {
         Properties combinedProperties = new Properties();
         combinedProperties.putAll(DEFAULT_JDBC_PROPERTIES);
         if (jdbcProperties != null) {
             combinedProperties.putAll(jdbcProperties);
         }
-        StringBuilder jdbcUrlStringBuilder = new StringBuilder(JDBC_URL_PATTERN);
+        String urlPattern =
+                jdbcDriver.toLowerCase().contains("oceanbase") ? OB_URL_PATTERN : MYSQL_URL_PATTERN;
+        StringBuilder jdbcUrlStringBuilder = new StringBuilder(urlPattern);
         combinedProperties.forEach(
                 (key, value) -> {
                     jdbcUrlStringBuilder.append("&").append(key).append("=").append(value);
@@ -98,9 +102,9 @@ public class OceanBaseConnection extends JdbcConnection {
     }
 
     private static JdbcConnection.ConnectionFactory factory(
-            Properties jdbcProperties, ClassLoader classLoader) {
+            String jdbcDriver, Properties jdbcProperties, ClassLoader classLoader) {
         return JdbcConnection.patternBasedFactory(
-                formatJdbcUrl(jdbcProperties), DRIVER_CLASS_NAME, classLoader);
+                formatJdbcUrl(jdbcDriver, jdbcProperties), jdbcDriver, classLoader);
     }
 
     /**

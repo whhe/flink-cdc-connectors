@@ -97,7 +97,8 @@ public class OceanBaseConnectorITCase extends OceanBaseTestBase {
                                 + " 'logproxy.host' = '%s',"
                                 + " 'logproxy.port' = '%s',"
                                 + " 'rootserver-list' = '%s',"
-                                + " 'working-mode' = 'memory'"
+                                + " 'working-mode' = 'memory',"
+                                + " 'jdbc.properties.useSSL' = 'false'"
                                 + ")",
                         getUsername(),
                         getPassword(),
@@ -221,7 +222,8 @@ public class OceanBaseConnectorITCase extends OceanBaseTestBase {
                                 + " 'logproxy.host' = '%s',"
                                 + " 'logproxy.port' = '%s',"
                                 + " 'rootserver-list' = '%s',"
-                                + " 'working-mode' = 'memory'"
+                                + " 'working-mode' = 'memory',"
+                                + " 'jdbc.properties.useSSL' = 'false'"
                                 + ")",
                         getUsername(),
                         getPassword(),
@@ -351,7 +353,8 @@ public class OceanBaseConnectorITCase extends OceanBaseTestBase {
                                 + " 'logproxy.host' = '%s',"
                                 + " 'logproxy.port' = '%s',"
                                 + " 'rootserver-list' = '%s',"
-                                + " 'working-mode' = 'memory'"
+                                + " 'working-mode' = 'memory',"
+                                + " 'jdbc.properties.useSSL' = 'false'"
                                 + ")",
                         getUsername(),
                         getPassword(),
@@ -480,7 +483,8 @@ public class OceanBaseConnectorITCase extends OceanBaseTestBase {
                                 + " 'logproxy.host' = '%s',"
                                 + " 'logproxy.port' = '%s',"
                                 + " 'rootserver-list' = '%s',"
-                                + " 'working-mode' = 'memory'"
+                                + " 'working-mode' = 'memory',"
+                                + " 'jdbc.properties.useSSL' = 'false'"
                                 + ")",
                         getUsername(),
                         getPassword(),

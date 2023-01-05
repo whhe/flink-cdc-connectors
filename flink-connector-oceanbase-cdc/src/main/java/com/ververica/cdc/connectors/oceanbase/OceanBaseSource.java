@@ -57,6 +57,7 @@ public class OceanBaseSource {
         // snapshot reading config
         private String hostname;
         private Integer port;
+        private String jdbcDriver;
         private Properties jdbcProperties;
 
         // incremental reading config
@@ -125,6 +126,11 @@ public class OceanBaseSource {
             return this;
         }
 
+        public Builder<T> jdbcDriver(String jdbcDriver) {
+            this.jdbcDriver = jdbcDriver;
+            return this;
+        }
+
         public Builder<T> jdbcProperties(Properties jdbcProperties) {
             this.jdbcProperties = jdbcProperties;
             return this;
@@ -175,6 +181,8 @@ public class OceanBaseSource {
                 case INITIAL:
                     checkNotNull(hostname, "hostname shouldn't be null on startup mode 'initial'");
                     checkNotNull(port, "port shouldn't be null on startup mode 'initial'");
+                    checkNotNull(
+                            jdbcDriver, "jdbcDriver shouldn't be null on startup mode 'initial'");
                     startupTimestamp = 0L;
                     break;
                 case LATEST_OFFSET:
@@ -250,6 +258,7 @@ public class OceanBaseSource {
                     serverTimeZone,
                     hostname,
                     port,
+                    jdbcDriver,
                     jdbcProperties,
                     logProxyHost,
                     logProxyPort,

@@ -15,6 +15,16 @@ OceanBase CDC 连接器允许从 OceanBase 读取快照数据和增量数据。�
 </dependency>
 ```
 
+如果您是要连接企业版的 OceanBase，您可能需要使用 OceanBase 官方的 JDBC 驱动，这时需要引入如下依赖。
+
+```xml
+<dependency>
+   <groupId>com.oceanbase</groupId>
+   <artifactId>oceanbase-client</artifactId>
+   <version>2.4.0</version>
+</dependency>
+```
+
 ## 下载 SQL 客户端 JAR 包
 
 ```下载链接仅在已发布版本可用，请在文档网站左下角选择浏览已发布的版本。```
@@ -22,6 +32,8 @@ OceanBase CDC 连接器允许从 OceanBase 读取快照数据和增量数据。�
 下载[flink-sql-connector-oceanbase-cdc-2.4-SNAPSHOT.jar](https://repo1.maven.org/maven2/com/ververica/flink-sql-connector-oceanbase-cdc/2.4-SNAPSHOT/flink-sql-connector-oceanbase-cdc-2.4-SNAPSHOT.jar)  到 `<FLINK_HOME>/lib/` 目录下。
 
 **注意:** flink-sql-connector-oceanbase-cdc-XXX-SNAPSHOT 版本是开发分支`release-XXX`对应的快照版本，快照版本用户需要下载源代码并编译相应的 jar。用户应使用已经发布的版本，例如 [flink-sql-connector-oceanbase-cdc-2.3.0.jar](https://mvnrepository.com/artifact/com.ververica/flink-sql-connector-oceanbase-cdc) 当前已发布的所有版本都可以在 Maven 中央仓库获取。
+
+对于 JDBC 驱动，上述的 cdc jar 文件中已经包含了我们推荐的 MySQL 驱动版本 5.1.47。由于开源许可证的原因，我们不能在上述 cdc jar 文件中包含 OceanBase 的官方 JDBC 驱动，如果您需要使用它，可以从[这里](https://repo1.maven.org/maven2/com/oceanbase/oceanbase-client/2.4.0/oceanbase-client-2.4.0.jar)下载，然后放到 `<FLINK_HOME>/lib/` 目录下，同时需要将配置项 `jdbc.driver` 设为 `com.oceanbase.jdbc.Driver`。
 
 ### 配置 OceanBase 数据库和 oblogproxy 服务
 
@@ -118,7 +130,8 @@ logproxy.client.id | 否 | 按规则生成 | String |	OceanBase日志代理服�
 rootserver-list | 是 | 无 | String | OceanBase root 服务器列表，服务器格式为 `ip:rpc_port:sql_port`，<br>多个服务器地址使用英文分号 `;` 隔开，OceanBase 社区版本必填。
 config-url | 否 |  无 | String |	从配置服务器获取服务器信息的 url, OceanBase 企业版本必填。
 working-mode | 否 | storage | String | 日志代理中 `obcdc` 的工作模式 , 可以是 `storage` 或 `memory`。
-jdbc.properties.* | 否 | 无 | String | 传递自定义 JDBC URL 属性的选项。用户可以传递自定义属性，如 'jdbc.properties.supportLobLocator' = 'false'。
+jdbc.driver | 否 | com.mysql.jdbc.Driver | String | 全量读取时使用的 jdbc 驱动。
+jdbc.properties.* | 否 | 无 | String | 传递自定义 JDBC URL 属性的选项。用户可以传递自定义属性，如 'jdbc.properties.useSSL' = 'false'。
 
 ## 支持的元数据
 

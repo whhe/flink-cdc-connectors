@@ -85,6 +85,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final String serverTimeZone;
     private final String hostname;
     private final Integer port;
+    private final String jdbcDriver;
     private final Properties jdbcProperties;
     private final String logProxyHost;
     private final int logProxyPort;
@@ -114,6 +115,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             String serverTimeZone,
             String hostname,
             Integer port,
+            String jdbcDriver,
             Properties jdbcProperties,
             String logProxyHost,
             int logProxyPort,
@@ -131,6 +133,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.serverTimeZone = checkNotNull(serverTimeZone);
         this.hostname = hostname;
         this.port = port;
+        this.jdbcDriver = jdbcDriver;
         this.jdbcProperties = jdbcProperties;
         this.logProxyHost = checkNotNull(logProxyHost);
         this.logProxyPort = checkNotNull(logProxyPort);
@@ -186,6 +189,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             password,
                             connectTimeout,
                             serverTimeZone,
+                            jdbcDriver,
                             jdbcProperties,
                             getClass().getClassLoader());
         }

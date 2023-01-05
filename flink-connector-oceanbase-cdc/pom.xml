@@ -48,11 +48,11 @@ under the License.
             <version>${oblogclient.version}</version>
         </dependency>
 
-        <!-- OceanBase JDBC Driver -->
+        <!-- The default JDBC driver for reading snapshot-->
         <dependency>
-            <groupId>com.oceanbase</groupId>
-            <artifactId>oceanbase-client</artifactId>
-            <version>${obclient.version}</version>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.47</version>
         </dependency>
 
         <!-- test dependencies on Flink -->

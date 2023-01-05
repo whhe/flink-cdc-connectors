@@ -16,6 +16,16 @@ In order to setup the OceanBase CDC connector, the following table provides depe
 </dependency>
 ```
 
+If you want to use OceanBase JDBC driver to connect to the enterprise edition database, you should also include the following dependency in your class path.
+
+```xml
+<dependency>
+   <groupId>com.oceanbase</groupId>
+   <artifactId>oceanbase-client</artifactId>
+   <version>2.4.0</version>
+</dependency>
+```
+
 ### SQL Client JAR
 
 ```Download link is available only for stable releases.```
@@ -23,6 +33,8 @@ In order to setup the OceanBase CDC connector, the following table provides depe
 Download [flink-sql-connector-oceanbase-cdc-2.4-SNAPSHOT.jar](https://repo1.maven.org/maven2/com/ververica/flink-sql-connector-oceanbase-cdc/2.4-SNAPSHOT/flink-sql-connector-oceanbase-cdc-2.4-SNAPSHOT.jar) and put it under `<FLINK_HOME>/lib/`.
 
 **Note:** flink-sql-connector-oceanbase-cdc-XXX-SNAPSHOT version is the code corresponding to the development branch. Users need to download the source code and compile the corresponding jar. Users should use the released version, such as [flink-sql-connector-oceanbase-cdc-2.2.1.jar](https://mvnrepository.com/artifact/com.ververica/flink-sql-connector-oceanbase-cdc), the released version will be available in the Maven central warehouse.
+
+For JDBC driver, the cdc jar above already contains MySQL JDBC driver 5.1.47, which is our recommended version. Due to the license issue, we can not include the OceanBase JDBC driver in the cdc jar. If you need to use it, you can download it from [here](https://repo1.maven.org/maven2/com/oceanbase/oceanbase-client/2.4.0/oceanbase-client-2.4.0.jar) and put it under `<FLINK_HOME>/lib/`, you also need to set the start option `jdbc.driver` to `com.oceanbase.jdbc.Driver`.
 
 Setup OceanBase and LogProxy Server
 ----------------------
@@ -252,11 +264,18 @@ The OceanBase CDC Connector contains some options for both sql and stream api as
                 <td>Working mode of `obcdc` in LogProxy, can be `storage` or `memory`.</td>
             </tr>
             <tr>
+                <td>jdbc.driver</td>
+                <td>optional</td>
+                <td style="word-wrap: break-word;">com.mysql.jdbc.Driver</td>
+                <td>String</td>
+                <td>JDBC driver class for snapshot reading.</td>
+            </tr>
+            <tr>
                 <td>jdbc.properties.*</td>
                 <td>optional</td>
                 <td style="word-wrap: break-word;">(none)</td>
                 <td>String</td>
-                <td>Option to pass custom JDBC URL properties. User can pass custom properties like 'jdbc.properties.supportLobLocator' = 'false'.</td>
+                <td>Option to pass custom JDBC URL properties. User can pass custom properties like 'jdbc.properties.useSSL' = 'false'.</td>
             </tr>
         </tbody>
     </table>
