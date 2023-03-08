@@ -227,7 +227,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                 && StringUtils.isNotBlank(databaseName)
                 && StringUtils.isNotBlank(tableName)) {
             try {
-                LOG.info("Connection database mode: {}", getSnapshotConnection().getDatabaseMode());
+                LOG.info(
+                        "Connection database mode: {}",
+                        getSnapshotConnection().getCompatibleMode());
                 List<String> tables = getSnapshotConnection().getTables(databaseName, tableName);
                 LOG.info("Pattern matched tables: {}", tables);
                 localTableSet.addAll(tables);
@@ -263,7 +265,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                 new OceanBaseRecord.SourceInfo(
                         tenantName, databaseName, tableName, resolvedTimestamp);
         try {
-            String databaseMode = getSnapshotConnection().getDatabaseMode();
+            String databaseMode = getSnapshotConnection().getCompatibleMode();
             String fullName;
             if ("mysql".equalsIgnoreCase(databaseMode)) {
                 fullName = String.format("`%s`.`%s`", databaseName, tableName);

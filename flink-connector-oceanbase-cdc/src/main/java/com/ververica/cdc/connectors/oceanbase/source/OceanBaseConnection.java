@@ -40,7 +40,7 @@ public class OceanBaseConnection extends JdbcConnection {
     private static final String OB_URL_PATTERN =
             "jdbc:oceanbase://${hostname}:${port}/?connectTimeout=${connectTimeout}&serverTimezone=${serverTimezone}";
 
-    private String databaseMode;
+    private String compatibleMode;
 
     public OceanBaseConnection(
             String hostname,
@@ -108,16 +108,16 @@ public class OceanBaseConnection extends JdbcConnection {
     }
 
     /**
-     * Get the database mode of this connection, should be 'MySQL' or 'Oracle'.
+     * Get the compatible mode of this connection, should be 'MySQL' or 'Oracle'.
      *
-     * @return The database mode.
+     * @return The compatible mode.
      * @throws SQLException If a database access error occurs.
      */
-    public String getDatabaseMode() throws SQLException {
-        if (databaseMode == null) {
-            databaseMode = connection().getMetaData().getDatabaseProductName();
+    public String getCompatibleMode() throws SQLException {
+        if (compatibleMode == null) {
+            compatibleMode = connection().getMetaData().getDatabaseProductName();
         }
-        return databaseMode;
+        return compatibleMode;
     }
 
     /**
@@ -131,7 +131,7 @@ public class OceanBaseConnection extends JdbcConnection {
     public List<String> getTables(String dbPattern, String tbPattern) throws SQLException {
         List<String> result = new ArrayList<>();
         DatabaseMetaData metaData = connection().getMetaData();
-        switch (getDatabaseMode().toLowerCase()) {
+        switch (getCompatibleMode().toLowerCase()) {
             case "mysql":
                 List<String> dbNames = getResultList(metaData.getCatalogs(), "TABLE_CAT");
                 dbNames =
@@ -165,7 +165,8 @@ public class OceanBaseConnection extends JdbcConnection {
                 }
                 break;
             default:
-                throw new FlinkRuntimeException("Unsupported database mode: " + getDatabaseMode());
+                throw new FlinkRuntimeException(
+                        "Unsupported database mode: " + getCompatibleMode());
         }
         return result;
     }
