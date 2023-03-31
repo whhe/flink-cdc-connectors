@@ -36,9 +36,9 @@ public class OceanBaseConnection extends JdbcConnection {
 
     private static final Properties DEFAULT_JDBC_PROPERTIES = initializeDefaultJdbcProperties();
     private static final String MYSQL_URL_PATTERN =
-            "jdbc:mysql://${hostname}:${port}/?connectTimeout=${connectTimeout}&serverTimezone=${serverTimezone}";
+            "jdbc:mysql://${hostname}:${port}/?connectTimeout=${connectTimeout}";
     private static final String OB_URL_PATTERN =
-            "jdbc:oceanbase://${hostname}:${port}/?connectTimeout=${connectTimeout}&serverTimezone=${serverTimezone}";
+            "jdbc:oceanbase://${hostname}:${port}/?connectTimeout=${connectTimeout}";
 
     private String compatibleMode;
 
@@ -48,29 +48,22 @@ public class OceanBaseConnection extends JdbcConnection {
             String user,
             String password,
             Duration timeout,
-            String serverTimeZone,
             String jdbcDriver,
             Properties jdbcProperties,
             ClassLoader classLoader) {
         super(
-                config(hostname, port, user, password, timeout, serverTimeZone),
+                config(hostname, port, user, password, timeout),
                 factory(jdbcDriver, jdbcProperties, classLoader));
     }
 
     private static Configuration config(
-            String hostname,
-            Integer port,
-            String user,
-            String password,
-            Duration timeout,
-            String serverTimeZone) {
+            String hostname, Integer port, String user, String password, Duration timeout) {
         return Configuration.create()
                 .with("hostname", hostname)
                 .with("port", port)
                 .with("user", user)
                 .with("password", password)
                 .with("connectTimeout", timeout == null ? 30000 : timeout.toMillis())
-                .with("serverTimezone", serverTimeZone)
                 .build();
     }
 
@@ -95,7 +88,7 @@ public class OceanBaseConnection extends JdbcConnection {
         defaultJdbcProperties.setProperty("useInformationSchema", "true");
         defaultJdbcProperties.setProperty("nullCatalogMeansCurrent", "false");
         defaultJdbcProperties.setProperty("useUnicode", "true");
-        defaultJdbcProperties.setProperty("zeroDateTimeBehavior", "CONVERT_TO_NULL");
+        defaultJdbcProperties.setProperty("zeroDateTimeBehavior", "convertToNull");
         defaultJdbcProperties.setProperty("characterEncoding", "UTF-8");
         defaultJdbcProperties.setProperty("characterSetResults", "UTF-8");
         return defaultJdbcProperties;

@@ -82,7 +82,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final String tableName;
     private final String tableList;
     private final Duration connectTimeout;
-    private final String serverTimeZone;
     private final String hostname;
     private final Integer port;
     private final String jdbcDriver;
@@ -112,7 +111,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             String tableName,
             String tableList,
             Duration connectTimeout,
-            String serverTimeZone,
             String hostname,
             Integer port,
             String jdbcDriver,
@@ -130,7 +128,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.tableName = tableName;
         this.tableList = tableList;
         this.connectTimeout = checkNotNull(connectTimeout);
-        this.serverTimeZone = checkNotNull(serverTimeZone);
         this.hostname = hostname;
         this.port = port;
         this.jdbcDriver = jdbcDriver;
@@ -188,7 +185,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             username,
                             password,
                             connectTimeout,
-                            serverTimeZone,
                             jdbcDriver,
                             jdbcProperties,
                             getClass().getClassLoader());

@@ -255,7 +255,6 @@ public class OceanBaseSource {
                     tableName,
                     tableList,
                     connectTimeout,
-                    serverTimeZone,
                     hostname,
                     port,
                     jdbcDriver,
