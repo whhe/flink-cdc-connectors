@@ -93,7 +93,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final OceanBaseDeserializationSchema<T> deserializer;
 
     private final AtomicBoolean snapshotCompleted = new AtomicBoolean(false);
-    private final List<LogMessage> logMessageBuffer = new LinkedList<>();
+    private final List<OceanBaseRecord> changeRecordBuffer = new LinkedList<>();
 
     private transient Set<String> tableSet;
     private transient volatile long resolvedTimestamp;
@@ -329,21 +329,23 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                 if (!started) {
                                     break;
                                 }
-                                logMessageBuffer.add(message);
+                                OceanBaseRecord record = getChangeRecord(message);
+                                if (record != null) {
+                                    changeRecordBuffer.add(record);
+                                }
                                 break;
                             case COMMIT:
                                 // flush buffer after snapshot completed
                                 if (!shouldReadSnapshot() || snapshotCompleted.get()) {
-                                    logMessageBuffer.forEach(
-                                            msg -> {
+                                    changeRecordBuffer.forEach(
+                                            r -> {
                                                 try {
-                                                    deserializer.deserialize(
-                                                            getChangeRecord(msg), outputCollector);
+                                                    deserializer.deserialize(r, outputCollector);
                                                 } catch (Exception e) {
                                                     throw new FlinkRuntimeException(e);
                                                 }
                                             });
-                                    logMessageBuffer.clear();
+                                    changeRecordBuffer.clear();
                                     long timestamp = getCheckpointTimestamp(message);
                                     if (timestamp > resolvedTimestamp) {
                                         resolvedTimestamp = timestamp;
@@ -379,6 +381,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
     private OceanBaseRecord getChangeRecord(LogMessage message) {
         String databaseName = message.getDbName().replace(tenantName + ".", "");
+        if (!tableSet.contains(String.format("%s.%s", databaseName, message.getTableName()))) {
+            return null;
+        }
         OceanBaseRecord.SourceInfo sourceInfo =
                 new OceanBaseRecord.SourceInfo(
                         tenantName,
