@@ -430,9 +430,10 @@ public class OceanBaseSourceExample {
                       .tableName("test_table")
                       .hostname("127.0.0.1")
                       .port(2881)
+                      .jdbcDriver("com.mysql.jdbc.Driver")
                       .logProxyHost("127.0.0.1")
                       .logProxyPort(2983)
-                      .serverTimeZone(serverTimezone)
+                      .serverTimeZone(serverTimeZone)
                       .deserializer(deserializer)
                       .build();
 
