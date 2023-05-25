@@ -59,8 +59,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
 
     private final String hostname;
     private final Integer port;
+    private final String compatibleMode;
     private final String jdbcDriver;
     private final Properties jdbcProperties;
+    private final Integer snapshotChunkSize;
+    private final Integer snapshotThreadNum;
 
     private final String logProxyHost;
     private final Integer logProxyPort;
@@ -93,8 +96,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
             Duration connectTimeout,
             String hostname,
             Integer port,
+            String compatibleMode,
             String jdbcDriver,
             Properties jdbcProperties,
+            Integer snapshotChunkSize,
+            Integer snapshotThreadNum,
             String logProxyHost,
             Integer logProxyPort,
             String logProxyClientId,
@@ -114,8 +120,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
         this.connectTimeout = connectTimeout;
         this.hostname = hostname;
         this.port = port;
+        this.compatibleMode = compatibleMode;
         this.jdbcDriver = jdbcDriver;
         this.jdbcProperties = jdbcProperties;
+        this.snapshotChunkSize = snapshotChunkSize;
+        this.snapshotThreadNum = snapshotThreadNum;
         this.logProxyHost = checkNotNull(logProxyHost);
         this.logProxyPort = checkNotNull(logProxyPort);
         this.logProxyClientId = logProxyClientId;
@@ -161,8 +170,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         .connectTimeout(connectTimeout)
                         .hostname(hostname)
                         .port(port)
+                        .compatibleMode(compatibleMode)
                         .jdbcDriver(jdbcDriver)
                         .jdbcProperties(jdbcProperties)
+                        .snapshotChunkSize(snapshotChunkSize)
+                        .snapshotThreadNum(snapshotThreadNum)
                         .logProxyHost(logProxyHost)
                         .logProxyPort(logProxyPort)
                         .logProxyClientId(logProxyClientId)
@@ -220,8 +232,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         connectTimeout,
                         hostname,
                         port,
+                        compatibleMode,
                         jdbcDriver,
                         jdbcProperties,
+                        snapshotChunkSize,
+                        snapshotThreadNum,
                         logProxyHost,
                         logProxyPort,
                         logProxyClientId,

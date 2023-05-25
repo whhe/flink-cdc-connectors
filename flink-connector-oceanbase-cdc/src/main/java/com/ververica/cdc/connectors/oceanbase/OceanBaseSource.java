@@ -57,8 +57,11 @@ public class OceanBaseSource {
         // snapshot reading config
         private String hostname;
         private Integer port;
+        private String compatibleMode;
         private String jdbcDriver;
         private Properties jdbcProperties;
+        private Integer snapshotChunkSize;
+        private Integer snapshotThreadNum;
 
         // incremental reading config
         private String logProxyHost;
@@ -126,6 +129,11 @@ public class OceanBaseSource {
             return this;
         }
 
+        public Builder<T> compatibleMode(String compatibleMode) {
+            this.compatibleMode = compatibleMode;
+            return this;
+        }
+
         public Builder<T> jdbcDriver(String jdbcDriver) {
             this.jdbcDriver = jdbcDriver;
             return this;
@@ -133,6 +141,16 @@ public class OceanBaseSource {
 
         public Builder<T> jdbcProperties(Properties jdbcProperties) {
             this.jdbcProperties = jdbcProperties;
+            return this;
+        }
+
+        public Builder<T> snapshotChunkSize(Integer snapshotChunkSize) {
+            this.snapshotChunkSize = snapshotChunkSize;
+            return this;
+        }
+
+        public Builder<T> snapshotThreadNum(Integer snapshotThreadNum) {
+            this.snapshotThreadNum = snapshotThreadNum;
             return this;
         }
 
@@ -257,8 +275,11 @@ public class OceanBaseSource {
                     connectTimeout,
                     hostname,
                     port,
+                    compatibleMode,
                     jdbcDriver,
                     jdbcProperties,
+                    snapshotChunkSize,
+                    snapshotThreadNum,
                     logProxyHost,
                     logProxyPort,
                     clientConf,

@@ -83,7 +83,10 @@ public class OceanBaseTableFactoryTest {
     private static final String CONNECT_TIMEOUT = "30s";
     private static final String HOSTNAME = "127.0.0.1";
     private static final Integer PORT = 2881;
+    private static final String COMPATIBLE_MODE = "MYSQL";
     private static final String DRIVER_CLASS = "com.mysql.jdbc.Driver";
+    private static final Integer SNAPSHOT_CHUNK_SIZE = 1000;
+    private static final Integer SNAPSHOT_THREAD_NUM = 8;
     private static final String LOG_PROXY_HOST = "127.0.0.1";
     private static final Integer LOG_PROXY_PORT = 2983;
     private static final String LOG_PROXY_CLIENT_ID = "clientId";
@@ -113,8 +116,11 @@ public class OceanBaseTableFactoryTest {
                         Duration.parse("PT" + CONNECT_TIMEOUT),
                         null,
                         null,
+                        COMPATIBLE_MODE,
                         DRIVER_CLASS,
                         new Properties(),
+                        SNAPSHOT_CHUNK_SIZE,
+                        SNAPSHOT_THREAD_NUM,
                         LOG_PROXY_HOST,
                         LOG_PROXY_PORT,
                         null,
@@ -134,7 +140,10 @@ public class OceanBaseTableFactoryTest {
         options.put("table-list", TABLE_LIST);
         options.put("hostname", HOSTNAME);
         options.put("port", String.valueOf(PORT));
+        options.put("compatible-mode", COMPATIBLE_MODE);
         options.put("jdbc.driver", DRIVER_CLASS);
+        options.put("scan.snapshot.chunk-size", String.valueOf(SNAPSHOT_CHUNK_SIZE));
+        options.put("scan.snapshot.thread-num", String.valueOf(SNAPSHOT_CHUNK_SIZE));
         options.put("logproxy.client.id", LOG_PROXY_CLIENT_ID);
         options.put("rootserver-list", RS_LIST);
         DynamicTableSource actualSource = createTableSource(SCHEMA, options);
@@ -153,8 +162,11 @@ public class OceanBaseTableFactoryTest {
                         Duration.parse("PT" + CONNECT_TIMEOUT),
                         "127.0.0.1",
                         2881,
+                        COMPATIBLE_MODE,
                         DRIVER_CLASS,
                         new Properties(),
+                        SNAPSHOT_CHUNK_SIZE,
+                        SNAPSHOT_THREAD_NUM,
                         LOG_PROXY_HOST,
                         LOG_PROXY_PORT,
                         LOG_PROXY_CLIENT_ID,
@@ -194,8 +206,11 @@ public class OceanBaseTableFactoryTest {
                         Duration.parse("PT" + CONNECT_TIMEOUT),
                         null,
                         null,
+                        COMPATIBLE_MODE,
                         DRIVER_CLASS,
                         new Properties(),
+                        SNAPSHOT_CHUNK_SIZE,
+                        SNAPSHOT_THREAD_NUM,
                         LOG_PROXY_HOST,
                         LOG_PROXY_PORT,
                         null,

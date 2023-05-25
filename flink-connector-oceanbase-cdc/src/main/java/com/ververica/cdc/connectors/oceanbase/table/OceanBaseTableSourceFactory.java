@@ -109,12 +109,31 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                     .withDescription(
                             "Integer port number of OceanBase database server or OceanBase proxy server.");
 
+    public static final ConfigOption<String> COMPATIBLE_MODE =
+            ConfigOptions.key("compatible-mode")
+                    .stringType()
+                    .defaultValue("MYSQL")
+                    .withDescription(
+                            "The compatible mode of OceanBase, can be 'MYSQL' or 'ORACLE'.");
+
     public static final ConfigOption<String> JDBC_DRIVER =
             ConfigOptions.key("jdbc.driver")
                     .stringType()
                     .defaultValue("com.mysql.jdbc.Driver")
                     .withDescription(
                             "JDBC driver class name, use 'com.mysql.jdbc.Driver' by default.");
+
+    public static final ConfigOption<Integer> SNAPSHOT_CHUNK_SIZE =
+            ConfigOptions.key("scan.snapshot.chunk-size")
+                    .intType()
+                    .defaultValue(1000)
+                    .withDescription("The chunk size of table snapshot,");
+
+    public static final ConfigOption<Integer> SNAPSHOT_THREAD_NUM =
+            ConfigOptions.key("scan.snapshot.thread-num")
+                    .intType()
+                    .defaultValue(8)
+                    .withDescription("The thread number to read snapshot.");
 
     public static final ConfigOption<String> LOG_PROXY_HOST =
             ConfigOptions.key("logproxy.host")
@@ -187,7 +206,10 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
 
         String hostname = config.get(HOSTNAME);
         Integer port = config.get(PORT);
+        String compatibleMode = config.get(COMPATIBLE_MODE);
         String jdbcDriver = config.get(JDBC_DRIVER);
+        Integer snapshotChunkSize = config.get(SNAPSHOT_CHUNK_SIZE);
+        Integer snapshotThreadNum = config.get(SNAPSHOT_THREAD_NUM);
 
         String logProxyHost = config.get(LOG_PROXY_HOST);
         Integer logProxyPort = config.get(LOG_PROXY_PORT);
@@ -210,8 +232,11 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                 connectTimeout,
                 hostname,
                 port,
+                compatibleMode,
                 jdbcDriver,
                 JdbcUrlUtils.getJdbcProperties(context.getCatalogTable().getOptions()),
+                snapshotChunkSize,
+                snapshotThreadNum,
                 logProxyHost,
                 logProxyPort,
                 logProxyClientId,
@@ -247,7 +272,10 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
         options.add(TABLE_LIST);
         options.add(HOSTNAME);
         options.add(PORT);
+        options.add(COMPATIBLE_MODE);
         options.add(JDBC_DRIVER);
+        options.add(SNAPSHOT_CHUNK_SIZE);
+        options.add(SNAPSHOT_THREAD_NUM);
         options.add(CONNECT_TIMEOUT);
         options.add(SERVER_TIME_ZONE);
         options.add(LOG_PROXY_CLIENT_ID);

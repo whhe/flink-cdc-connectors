@@ -83,8 +83,11 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final Duration connectTimeout;
     private final String hostname;
     private final Integer port;
+    private final String compatibleMode;
     private final String jdbcDriver;
     private final Properties jdbcProperties;
+    private final Integer snapshotChunkSize;
+    private final Integer snapshotThreadNum;
     private final String logProxyHost;
     private final int logProxyPort;
     private final ClientConf logProxyClientConf;
@@ -112,8 +115,11 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             Duration connectTimeout,
             String hostname,
             Integer port,
+            String compatibleMode,
             String jdbcDriver,
             Properties jdbcProperties,
+            Integer snapshotChunkSize,
+            Integer snapshotThreadNum,
             String logProxyHost,
             int logProxyPort,
             ClientConf logProxyClientConf,
@@ -129,8 +135,11 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.connectTimeout = checkNotNull(connectTimeout);
         this.hostname = hostname;
         this.port = port;
+        this.compatibleMode = compatibleMode;
         this.jdbcDriver = jdbcDriver;
         this.jdbcProperties = jdbcProperties;
+        this.snapshotChunkSize = snapshotChunkSize;
+        this.snapshotThreadNum = snapshotThreadNum;
         this.logProxyHost = checkNotNull(logProxyHost);
         this.logProxyPort = checkNotNull(logProxyPort);
         this.logProxyClientConf = checkNotNull(logProxyClientConf);
