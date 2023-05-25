@@ -57,7 +57,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static org.apache.flink.util.Preconditions.checkNotNull;
 
@@ -241,10 +240,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
         LOG.info("Table list: {}", localTableSet);
         this.tableSet = localTableSet;
-        this.obReaderConfig.setTableWhiteList(
-                localTableSet.stream()
-                        .map(table -> String.format("%s.%s", tenantName, table))
-                        .collect(Collectors.joining("|")));
+        this.obReaderConfig.setTableWhiteList(String.format("%s.*.*", tenantName));
     }
 
     protected void readSnapshotRecords() {
