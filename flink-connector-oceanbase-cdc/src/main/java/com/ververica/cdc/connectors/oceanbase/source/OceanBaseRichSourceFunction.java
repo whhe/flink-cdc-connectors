@@ -99,7 +99,8 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
     private transient Set<String> tableSet;
     private transient volatile long resolvedTimestamp;
-    private transient volatile OceanBaseConnection snapshotConnection;
+    private transient OceanBaseConnectionProvider connectionProvider;
+    private transient OceanBaseChunkReader chunkReader;
     private transient LogProxyClient logProxyClient;
     private transient ListState<Long> offsetState;
     private transient OutputCollector<T> outputCollector;
@@ -166,11 +167,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
         if (shouldReadSnapshot()) {
             synchronized (ctx.getCheckpointLock()) {
-                try {
-                    readSnapshotRecords();
-                } finally {
-                    closeSnapshotConnection();
-                }
+                readSnapshotRecords();
                 LOG.info("Snapshot reading finished");
             }
         } else {
@@ -184,31 +181,21 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         return resolvedTimestamp == -1 && snapshot;
     }
 
-    private OceanBaseConnection getSnapshotConnection() throws SQLException {
-        if (snapshotConnection == null) {
-            snapshotConnection =
-                    new OceanBaseConnection(
+    private OceanBaseConnectionProvider getConnectionProvider() throws SQLException {
+        if (connectionProvider == null) {
+            connectionProvider =
+                    new OceanBaseConnectionProvider(
                             hostname,
                             port,
                             username,
                             password,
                             connectTimeout,
+                            compatibleMode,
                             jdbcDriver,
                             jdbcProperties,
-                            getClass().getClassLoader());
+                            snapshotThreadNum);
         }
-        return snapshotConnection;
-    }
-
-    private void closeSnapshotConnection() {
-        if (snapshotConnection != null) {
-            try {
-                snapshotConnection.close();
-            } catch (SQLException e) {
-                LOG.error("Failed to close snapshotConnection", e);
-            }
-            snapshotConnection = null;
-        }
+        return connectionProvider;
     }
 
     private void initTableWhiteList() {
@@ -231,10 +218,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                 && StringUtils.isNotBlank(databaseName)
                 && StringUtils.isNotBlank(tableName)) {
             try {
-                LOG.info(
-                        "Connection database mode: {}",
-                        getSnapshotConnection().getCompatibleMode());
-                List<String> tables = getSnapshotConnection().getTables(databaseName, tableName);
+                List<String> tables =
+                        OceanBaseJdbcUtils.getTables(
+                                getConnectionProvider(), databaseName, tableName);
                 LOG.info("Pattern matched tables: {}", tables);
                 localTableSet.addAll(tables);
             } catch (SQLException e) {
@@ -252,31 +238,31 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.obReaderConfig.setTableWhiteList(String.format("%s.*.*", tenantName));
     }
 
-    protected void readSnapshotRecords() {
-        tableSet.forEach(
-                table -> {
-                    String[] schema = table.split("\\.");
-                    readSnapshotRecordsByTable(schema[0], schema[1]);
-                });
-        snapshotCompleted.set(true);
+    private OceanBaseChunkReader getChunkReader() throws SQLException {
+        if (chunkReader == null) {
+            chunkReader = new OceanBaseChunkReader(getConnectionProvider(), snapshotThreadNum);
+        }
+        return chunkReader;
     }
 
-    private void readSnapshotRecordsByTable(String databaseName, String tableName) {
-        OceanBaseRecord.SourceInfo sourceInfo =
-                new OceanBaseRecord.SourceInfo(
-                        tenantName, databaseName, tableName, resolvedTimestamp);
-        try {
-            String databaseMode = getSnapshotConnection().getCompatibleMode();
-            String fullName;
-            if ("mysql".equalsIgnoreCase(databaseMode)) {
-                fullName = String.format("`%s`.`%s`", databaseName, tableName);
-            } else {
-                fullName = String.format("%s.%s", databaseName, tableName);
-            }
-            LOG.info("Start to read snapshot from {}", fullName);
-            getSnapshotConnection()
-                    .query(
-                            "SELECT * FROM " + fullName,
+    protected void readSnapshotRecords() throws Exception {
+        for (String table : tableSet) {
+            String[] schema = table.split("\\.");
+            String dbName = schema[0];
+            String tableName = schema[1];
+            OceanBaseRecord.SourceInfo sourceInfo =
+                    new OceanBaseRecord.SourceInfo(
+                            tenantName, dbName, tableName, resolvedTimestamp);
+            List<String> indexNames =
+                    OceanBaseJdbcUtils.getIndexFields(getConnectionProvider(), dbName, tableName);
+            LOG.info("Table {}, index: {}", table, indexNames);
+            getChunkReader()
+                    .splitChunks(
+                            getConnectionProvider()
+                                    .getDialect()
+                                    .getFullTableName(dbName, tableName),
+                            indexNames,
+                            snapshotChunkSize,
                             rs -> {
                                 ResultSetMetaData metaData = rs.getMetaData();
                                 while (rs.next()) {
@@ -295,11 +281,12 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                     }
                                 }
                             });
-            LOG.info("Read snapshot from {} finished", fullName);
-        } catch (SQLException e) {
-            LOG.error("Read snapshot by table failed", e);
-            throw new FlinkRuntimeException(e);
         }
+        while (!getChunkReader().done()) {
+            Thread.sleep(1000);
+        }
+        snapshotCompleted.set(true);
+        getChunkReader().close();
     }
 
     protected void readChangeRecords() throws InterruptedException, TimeoutException {
@@ -458,7 +445,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
     @Override
     public void cancel() {
-        closeSnapshotConnection();
+        if (chunkReader != null) {
+            chunkReader.close();
+        }
         if (logProxyClient != null) {
             logProxyClient.stop();
         }

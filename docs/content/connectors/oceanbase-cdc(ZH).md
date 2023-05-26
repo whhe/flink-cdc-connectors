@@ -219,6 +219,20 @@ OceanBase CDC 连接器包括用于 SQL 和 DataStream API 的选项，如下表
                 </td>
             </tr>
             <tr>
+                <td>scan.snapshot.chunk-size</td>
+                <td>否</td>
+                <td style="word-wrap: break-word;">1000</td>
+                <td>Integer</td>
+                <td>全量读取时，一个切片的数据量大小。</td>
+            </tr>
+            <tr>
+                <td>scan.snapshot.thread-num</td>
+                <td>否</td>
+                <td style="word-wrap: break-word;">8</td>
+                <td>Integer</td>
+                <td>全量读取的任务并行数量。</td>
+            </tr>
+            <tr>
                 <td>logproxy.host</td>
                 <td>是</td>
                 <td style="word-wrap: break-word;">无</td>

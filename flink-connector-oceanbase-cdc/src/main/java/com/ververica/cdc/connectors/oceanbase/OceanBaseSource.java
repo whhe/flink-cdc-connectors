@@ -201,6 +201,12 @@ public class OceanBaseSource {
                     checkNotNull(port, "port shouldn't be null on startup mode 'initial'");
                     checkNotNull(
                             jdbcDriver, "jdbcDriver shouldn't be null on startup mode 'initial'");
+                    if (snapshotChunkSize == null) {
+                        snapshotChunkSize = 1000;
+                    }
+                    if (snapshotThreadNum == null) {
+                        snapshotThreadNum = 8;
+                    }
                     startupTimestamp = 0L;
                     break;
                 case LATEST_OFFSET:
@@ -214,6 +220,10 @@ public class OceanBaseSource {
                 default:
                     throw new UnsupportedOperationException(
                             startupMode + " mode is not supported.");
+            }
+
+            if (compatibleMode == null) {
+                compatibleMode = "MYSQL";
             }
 
             if (StringUtils.isNotEmpty(databaseName) || StringUtils.isNotEmpty(tableName)) {

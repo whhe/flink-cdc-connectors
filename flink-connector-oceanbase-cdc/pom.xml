@@ -48,6 +48,11 @@ under the License.
             <version>${oblogclient.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.2.18</version>
+        </dependency>
         <!-- The default JDBC driver for reading snapshot-->
         <dependency>
             <groupId>mysql</groupId>

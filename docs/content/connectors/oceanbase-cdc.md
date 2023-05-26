@@ -222,6 +222,20 @@ The OceanBase CDC Connector contains some options for both sql and stream api as
                 <td>The session timezone which controls how temporal types are converted to STRING in OceanBase. Can be UTC offset in format "±hh:mm", or named time zones if the time zone information tables in the mysql database have been created and populated.</td>
             </tr>
             <tr>
+                <td>scan.snapshot.chunk-size</td>
+                <td>optional</td>
+                <td style="word-wrap: break-word;">1000</td>
+                <td>Integer</td>
+                <td>Chunk size for reading snapshot.</td>
+            </tr>
+            <tr>
+                <td>scan.snapshot.thread-num</td>
+                <td>optional</td>
+                <td style="word-wrap: break-word;">8</td>
+                <td>Integer</td>
+                <td>Parallelism of reading snapshot.</td>
+            </tr>
+            <tr>
                 <td>logproxy.host</td>
                 <td>required</td>
                 <td style="word-wrap: break-word;">(none)</td>
