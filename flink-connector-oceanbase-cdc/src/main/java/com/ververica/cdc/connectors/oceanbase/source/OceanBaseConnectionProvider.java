@@ -58,7 +58,7 @@ public class OceanBaseConnectionProvider implements AutoCloseable {
         druidDataSource.setPassword(password);
         druidDataSource.setDriverClassName(jdbcDriver);
         druidDataSource.setInitialSize(threadNum);
-        druidDataSource.setMaxActive(threadNum + 4);
+        druidDataSource.setMaxActive(threadNum * 2);
         druidDataSource.setValidationQuery(dialect.getValidationSql());
         dataSource = druidDataSource;
     }

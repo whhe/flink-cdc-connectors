@@ -166,10 +166,8 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         readChangeRecords();
 
         if (shouldReadSnapshot()) {
-            synchronized (ctx.getCheckpointLock()) {
-                readSnapshotRecords();
-                LOG.info("Snapshot reading finished");
-            }
+            readSnapshotRecords();
+            LOG.info("Snapshot reading finished");
         } else {
             LOG.info("Skip snapshot reading");
         }
@@ -282,9 +280,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                 }
                             });
         }
-        while (!getChunkReader().done()) {
-            Thread.sleep(1000);
-        }
+        getChunkReader().waitTermination();
         snapshotCompleted.set(true);
         getChunkReader().close();
     }

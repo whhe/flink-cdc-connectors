@@ -26,10 +26,13 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /** OceanBase Snapshot Chunk Reader. */
 public class OceanBaseChunkReader implements AutoCloseable {
@@ -37,28 +40,42 @@ public class OceanBaseChunkReader implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(OceanBaseChunkReader.class);
 
     private final OceanBaseConnectionProvider connectionProvider;
+    private final Integer threadNum;
     private final BlockingQueue<OceanBaseChunk> chunks;
     private final ExecutorService executor;
+    private final CompletionService<Boolean> completionService;
+    private final AtomicBoolean waiting = new AtomicBoolean();
     private transient volatile Exception exception;
     private transient volatile boolean closed = false;
 
     public OceanBaseChunkReader(OceanBaseConnectionProvider connectionProvider, int threadNum) {
         this.connectionProvider = connectionProvider;
+        this.threadNum = threadNum;
         this.chunks = new LinkedBlockingQueue<>();
         this.executor = Executors.newFixedThreadPool(threadNum);
+        this.completionService = new ExecutorCompletionService<>(executor);
         for (int i = 0; i < threadNum; i++) {
-            this.executor.execute(
+            this.completionService.submit(
                     () -> {
-                        try {
-                            while (!closed) {
-                                OceanBaseChunk chunk = chunks.take();
-                                chunk.read(connectionProvider);
+                        while (!this.closed) {
+                            if (waiting.get() && chunks.isEmpty()) {
+                                return true;
                             }
-                        } catch (InterruptedException e) {
-                            LOG.info("OceanBaseChunkReader.executor is interrupted");
-                        } catch (Exception e) {
-                            this.exception = e;
+                            try {
+                                OceanBaseChunk chunk = chunks.poll(1000, TimeUnit.MILLISECONDS);
+                                if (chunk != null) {
+                                    chunk.read(connectionProvider);
+                                }
+                            } catch (Exception e) {
+                                if (e instanceof InterruptedException) {
+                                    LOG.info("OceanBaseChunkReader.executor is interrupted");
+                                } else {
+                                    this.exception = e;
+                                }
+                                return false;
+                            }
                         }
+                        return true;
                     });
         }
     }
@@ -69,12 +86,12 @@ public class OceanBaseChunkReader implements AutoCloseable {
             int chunkSize,
             JdbcConnection.ResultSetConsumer resultSetConsumer)
             throws Exception {
-        checkException();
         try (Connection connection = connectionProvider.getConnection();
                 Statement statement = connection.createStatement()) {
             List<Object> left = null;
             List<Object> right = null;
             do {
+                checkException();
                 String sql =
                         connectionProvider
                                 .getDialect()
@@ -104,9 +121,11 @@ public class OceanBaseChunkReader implements AutoCloseable {
         }
     }
 
-    public boolean done() {
-        checkException();
-        return chunks.isEmpty();
+    public void waitTermination() throws InterruptedException {
+        this.waiting.set(true);
+        for (int i = 0; i < threadNum; i++) {
+            completionService.take();
+        }
     }
 
     @Override
