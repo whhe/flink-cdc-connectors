@@ -51,7 +51,7 @@ public class OceanBaseChunkReader implements AutoCloseable {
     public OceanBaseChunkReader(OceanBaseConnectionProvider connectionProvider, int threadNum) {
         this.connectionProvider = connectionProvider;
         this.threadNum = threadNum;
-        this.chunks = new LinkedBlockingQueue<>();
+        this.chunks = new LinkedBlockingQueue<>(threadNum * 2);
         this.executor = Executors.newFixedThreadPool(threadNum);
         this.completionService = new ExecutorCompletionService<>(executor);
         for (int i = 0; i < threadNum; i++) {
@@ -110,7 +110,9 @@ public class OceanBaseChunkReader implements AutoCloseable {
                 }
                 left = right;
                 right = result;
-                chunks.put(new OceanBaseChunk(table, indexNames, left, right, resultSetConsumer));
+                chunks.put(
+                        new OceanBaseChunk(
+                                table, indexNames, left, right, chunkSize, resultSetConsumer));
             } while (right != null);
         }
     }

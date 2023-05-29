@@ -35,6 +35,7 @@ public class OceanBaseChunk {
     private final List<String> indexNames;
     private final List<Object> left;
     private final List<Object> right;
+    private final int chunkSize;
     private final JdbcConnection.ResultSetConsumer resultSetConsumer;
 
     public OceanBaseChunk(
@@ -42,17 +43,20 @@ public class OceanBaseChunk {
             List<String> indexNames,
             List<Object> left,
             List<Object> right,
+            int chunkSize,
             JdbcConnection.ResultSetConsumer resultSetConsumer) {
         this.table = table;
         this.indexNames = indexNames;
         this.left = left;
         this.right = right;
+        this.chunkSize = chunkSize;
         this.resultSetConsumer = resultSetConsumer;
     }
 
     public void read(OceanBaseConnectionProvider connectionProvider) throws SQLException {
         try (Connection connection = connectionProvider.getConnection();
                 Statement statement = connection.createStatement()) {
+            statement.setFetchSize(chunkSize);
             String sql =
                     connectionProvider
                             .getDialect()
