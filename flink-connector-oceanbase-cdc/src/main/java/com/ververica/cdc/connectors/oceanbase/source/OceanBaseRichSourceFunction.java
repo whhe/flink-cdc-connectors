@@ -23,6 +23,7 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.base.LongSerializer;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.state.FunctionInitializationContext;
 import org.apache.flink.runtime.state.FunctionSnapshotContext;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
@@ -43,6 +44,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.time.Duration;
@@ -104,6 +106,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private transient LogProxyClient logProxyClient;
     private transient ListState<Long> offsetState;
     private transient OutputCollector<T> outputCollector;
+    private transient OceanBaseMetrics metrics;
 
     public OceanBaseRichSourceFunction(
             boolean snapshot,
@@ -151,6 +154,15 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     @Override
     public void open(final Configuration config) throws Exception {
         super.open(config);
+        // initialize metrics
+        // make RuntimeContext#getMetricGroup compatible between Flink 1.13 and Flink 1.14
+        final Method getMetricGroupMethod =
+                getRuntimeContext().getClass().getMethod("getMetricGroup");
+        getMetricGroupMethod.setAccessible(true);
+        final MetricGroup metricGroup =
+                (MetricGroup) getMetricGroupMethod.invoke(getRuntimeContext());
+        this.metrics = new OceanBaseMetrics(metricGroup);
+        this.metrics.registerMetrics();
         this.outputCollector = new OutputCollector<>();
         this.resolvedTimestamp = -1;
     }
@@ -166,6 +178,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         readChangeRecords();
 
         if (shouldReadSnapshot()) {
+            LOG.info("Snapshot reading started");
             readSnapshotRecords();
             LOG.info("Snapshot reading finished");
         } else {
@@ -253,7 +266,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             tenantName, dbName, tableName, resolvedTimestamp);
             List<String> indexNames =
                     OceanBaseJdbcUtils.getIndexFields(getConnectionProvider(), dbName, tableName);
-            LOG.info("Table {}, index: {}", table, indexNames);
+            LOG.info("Start chunk reader for table: {}, index: {}", table, indexNames);
             getChunkReader()
                     .splitChunks(
                             getConnectionProvider()
@@ -263,7 +276,10 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             snapshotChunkSize,
                             rs -> {
                                 ResultSetMetaData metaData = rs.getMetaData();
+                                long start = System.currentTimeMillis();
                                 while (rs.next()) {
+                                    metrics.recordProcessTime(start);
+                                    metrics.recordFetchDelay(System.currentTimeMillis() - start);
                                     Map<String, Object> fieldMap = new HashMap<>();
                                     for (int i = 0; i < metaData.getColumnCount(); i++) {
                                         fieldMap.put(
@@ -277,6 +293,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                         LOG.error("Deserialize snapshot record failed ", e);
                                         throw new FlinkRuntimeException(e);
                                     }
+                                    long end = System.currentTimeMillis();
+                                    metrics.recordEmitDelay(end - start);
+                                    start = end;
                                 }
                             });
         }
@@ -317,8 +336,12 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                 if (!started) {
                                     break;
                                 }
+                                long now = System.currentTimeMillis();
+                                metrics.recordProcessTime(now);
                                 OceanBaseRecord record = getChangeRecord(message);
                                 if (record != null) {
+                                    metrics.recordFetchDelay(
+                                            now - record.getSourceInfo().getTimestampS() * 1000);
                                     changeRecordBuffer.add(record);
                                 }
                                 break;
@@ -329,6 +352,11 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                             r -> {
                                                 try {
                                                     deserializer.deserialize(r, outputCollector);
+                                                    metrics.recordEmitDelay(
+                                                            System.currentTimeMillis()
+                                                                    - r.getSourceInfo()
+                                                                                    .getTimestampS()
+                                                                            * 1000);
                                                 } catch (Exception e) {
                                                     throw new FlinkRuntimeException(e);
                                                 }

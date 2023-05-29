@@ -96,7 +96,7 @@ public class OceanBaseChunkReader implements AutoCloseable {
                         connectionProvider
                                 .getDialect()
                                 .getQueryNewChunkBoundSql(table, indexNames, right, chunkSize);
-                LOG.info("Query sql: " + sql);
+                LOG.info("Query chunk bound sql: " + sql);
 
                 ResultSet rs = statement.executeQuery(sql);
                 List<Object> result;

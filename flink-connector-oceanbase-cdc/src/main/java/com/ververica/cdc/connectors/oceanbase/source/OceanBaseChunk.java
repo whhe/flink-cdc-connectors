@@ -57,7 +57,7 @@ public class OceanBaseChunk {
                     connectionProvider
                             .getDialect()
                             .getQueryChunkSql(table, indexNames, left, right);
-            LOG.info("Query sql: " + sql);
+            LOG.info("Query chunk data sql: " + sql);
             ResultSet resultSet = statement.executeQuery(sql);
             resultSetConsumer.accept(resultSet);
         }
