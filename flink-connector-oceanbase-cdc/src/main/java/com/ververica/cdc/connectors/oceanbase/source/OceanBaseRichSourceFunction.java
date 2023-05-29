@@ -36,7 +36,6 @@ import com.oceanbase.clogproxy.client.config.ClientConf;
 import com.oceanbase.clogproxy.client.config.ObReaderConfig;
 import com.oceanbase.clogproxy.client.exception.LogProxyClientException;
 import com.oceanbase.clogproxy.client.listener.RecordListener;
-import com.oceanbase.oms.logmessage.DataMessage;
 import com.oceanbase.oms.logmessage.LogMessage;
 import com.ververica.cdc.connectors.oceanbase.table.OceanBaseDeserializationSchema;
 import com.ververica.cdc.connectors.oceanbase.table.OceanBaseRecord;
@@ -101,6 +100,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
     private transient Set<String> tableSet;
     private transient volatile long resolvedTimestamp;
+    private transient volatile long startTimestamp;
     private transient OceanBaseConnectionProvider connectionProvider;
     private transient OceanBaseChunkReader chunkReader;
     private transient LogProxyClient logProxyClient;
@@ -164,7 +164,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.metrics = new OceanBaseMetrics(metricGroup);
         this.metrics.registerMetrics();
         this.outputCollector = new OutputCollector<>();
-        this.resolvedTimestamp = -1;
     }
 
     @Override
@@ -189,7 +188,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     }
 
     private boolean shouldReadSnapshot() {
-        return resolvedTimestamp == -1 && snapshot;
+        return resolvedTimestamp <= 0 && snapshot;
     }
 
     private OceanBaseConnectionProvider getConnectionProvider() throws SQLException {
@@ -225,9 +224,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             }
         }
 
-        if (shouldReadSnapshot()
-                && StringUtils.isNotBlank(databaseName)
-                && StringUtils.isNotBlank(tableName)) {
+        if (StringUtils.isNotBlank(databaseName) && StringUtils.isNotBlank(tableName)) {
             try {
                 List<String> tables =
                         OceanBaseJdbcUtils.getTables(
@@ -301,6 +298,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         }
         getChunkReader().waitTermination();
         snapshotCompleted.set(true);
+        resolvedTimestamp = startTimestamp;
         getChunkReader().close();
     }
 
@@ -327,6 +325,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             case BEGIN:
                                 if (!started) {
                                     started = true;
+                                    startTimestamp = Long.parseLong(message.getSafeTimestamp());
                                     latch.countDown();
                                 }
                                 break;
@@ -362,7 +361,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                                 }
                                             });
                                     changeRecordBuffer.clear();
-                                    long timestamp = getCheckpointTimestamp(message);
+                                    long timestamp = Long.parseLong(message.getSafeTimestamp());
                                     if (timestamp > resolvedTimestamp) {
                                         resolvedTimestamp = timestamp;
                                     }
@@ -392,7 +391,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         if (!latch.await(connectTimeout.getSeconds(), TimeUnit.SECONDS)) {
             throw new TimeoutException("Timeout to receive messages in RecordListener");
         }
-        LOG.info("LogProxyClient packet processing started");
+        LOG.info("LogProxyClient packet processing started from timestamp {}", startTimestamp);
     }
 
     private OceanBaseRecord getChangeRecord(LogMessage message) {
@@ -405,29 +404,8 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                         tenantName,
                         databaseName,
                         message.getTableName(),
-                        getCheckpointTimestamp(message));
+                        Long.parseLong(message.getSafeTimestamp()));
         return new OceanBaseRecord(sourceInfo, message.getOpt(), message.getFieldList());
-    }
-
-    /**
-     * Get log message checkpoint timestamp in seconds. Refer to 'globalSafeTimestamp' in {@link
-     * LogMessage}.
-     *
-     * @param message Log message.
-     * @return Timestamp in seconds.
-     */
-    private long getCheckpointTimestamp(LogMessage message) {
-        long timestamp = -1;
-        try {
-            if (DataMessage.Record.Type.HEARTBEAT.equals(message.getOpt())) {
-                timestamp = Long.parseLong(message.getTimestamp());
-            } else {
-                timestamp = message.getFileNameOffset();
-            }
-        } catch (Throwable t) {
-            LOG.error("Failed to get checkpoint from log message", t);
-        }
-        return timestamp;
     }
 
     @Override
