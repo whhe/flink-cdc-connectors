@@ -21,9 +21,11 @@ import org.apache.flink.util.FlinkRuntimeException;
 import io.debezium.jdbc.JdbcConfiguration;
 import io.debezium.jdbc.JdbcConnection;
 
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -161,5 +163,21 @@ public class OceanBaseConnection extends JdbcConnection {
             result.add(resultSet.getString(columnName));
         }
         return result;
+    }
+
+    @Override
+    public JdbcConnection query(
+            String query, StatementFactory statementFactory, ResultSetConsumer resultConsumer)
+            throws SQLException {
+        Connection conn = connection();
+        try (Statement statement = statementFactory.createStatement(conn)) {
+            statement.setFetchSize(Integer.MIN_VALUE);
+            try (ResultSet resultSet = statement.executeQuery(query)) {
+                if (resultConsumer != null) {
+                    resultConsumer.accept(resultSet);
+                }
+            }
+        }
+        return this;
     }
 }
