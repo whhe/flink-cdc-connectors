@@ -41,7 +41,7 @@ public class OceanBaseSnapshotChunkReader {
     private final List<String> chunkKeyColumns;
     private final OceanBaseSnapshotChunkBound lowerBound;
     private final OceanBaseSnapshotChunkBound upperBound;
-    private final int chunkSize;
+    private final Integer chunkSize;
     private final JdbcConnection.ResultSetConsumer resultSetConsumer;
 
     public OceanBaseSnapshotChunkReader(
@@ -52,7 +52,7 @@ public class OceanBaseSnapshotChunkReader {
             List<String> chunkKeyColumns,
             @Nonnull OceanBaseSnapshotChunkBound lowerBound,
             @Nonnull OceanBaseSnapshotChunkBound upperBound,
-            int chunkSize,
+            Integer chunkSize,
             JdbcConnection.ResultSetConsumer resultSetConsumer) {
         this.dialect = dialect;
         this.dbName = dbName;
@@ -68,7 +68,9 @@ public class OceanBaseSnapshotChunkReader {
     public void read(OceanBaseDataSource dataSource) throws SQLException {
         try (Connection connection = dataSource.getConnection();
                 Statement statement = connection.createStatement()) {
-            statement.setFetchSize(chunkSize);
+            if (chunkSize != null) {
+                statement.setFetchSize(chunkSize);
+            }
             String sql =
                     dialect.getQueryChunkSql(
                             dbName,

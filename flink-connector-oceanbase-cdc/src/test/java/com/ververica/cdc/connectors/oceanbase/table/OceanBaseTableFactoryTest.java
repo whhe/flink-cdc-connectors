@@ -133,7 +133,11 @@ public class OceanBaseTableFactoryTest {
                         null,
                         RS_LIST,
                         null,
-                        WORKING_MODE);
+                        WORKING_MODE,
+                        null,
+                        null,
+                        null,
+                        null);
         assertEquals(expectedSource, actualSource);
     }
 
@@ -184,7 +188,11 @@ public class OceanBaseTableFactoryTest {
                         null,
                         RS_LIST,
                         null,
-                        WORKING_MODE);
+                        WORKING_MODE,
+                        null,
+                        null,
+                        null,
+                        null);
         assertEquals(expectedSource, actualSource);
     }
 
@@ -231,7 +239,11 @@ public class OceanBaseTableFactoryTest {
                         null,
                         RS_LIST,
                         null,
-                        WORKING_MODE);
+                        WORKING_MODE,
+                        null,
+                        null,
+                        null,
+                        null);
         expectedSource.producedDataType = SCHEMA_WITH_METADATA.toSourceRowDataType();
         expectedSource.metadataKeys =
                 Arrays.asList("op_ts", "tenant_name", "database_name", "table_name");

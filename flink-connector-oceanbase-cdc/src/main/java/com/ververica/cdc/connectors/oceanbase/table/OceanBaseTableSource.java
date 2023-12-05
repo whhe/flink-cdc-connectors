@@ -75,6 +75,10 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
     private final String rsList;
     private final String configUrl;
     private final String workingMode;
+    private final String decimalMode;
+    private final String temporalPrecisionMode;
+    private final String bigintUnsignedHandlingMode;
+    private final String binaryHandlingMode;
 
     // --------------------------------------------------------------------------------------------
     // Mutable attributes
@@ -113,7 +117,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
             Long startupTimestamp,
             String rsList,
             String configUrl,
-            String workingMode) {
+            String workingMode,
+            String decimalMode,
+            String temporalPrecisionMode,
+            String bigintUnsignedHandlingMode,
+            String binaryHandlingMode) {
         this.physicalSchema = physicalSchema;
         this.startupMode = checkNotNull(startupMode);
         this.username = checkNotNull(username);
@@ -141,6 +149,10 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
         this.rsList = rsList;
         this.configUrl = configUrl;
         this.workingMode = workingMode;
+        this.decimalMode = decimalMode;
+        this.temporalPrecisionMode = temporalPrecisionMode;
+        this.bigintUnsignedHandlingMode = bigintUnsignedHandlingMode;
+        this.binaryHandlingMode = binaryHandlingMode;
 
         this.producedDataType = physicalSchema.toPhysicalRowDataType();
         this.metadataKeys = Collections.emptyList();
@@ -194,7 +206,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         .rsList(rsList)
                         .configUrl(configUrl)
                         .workingMode(workingMode)
-                        .deserializer(deserializer);
+                        .deserializer(deserializer)
+                        .decimalMode(decimalMode)
+                        .temporalPrecisionMode(temporalPrecisionMode)
+                        .bigintUnsignedHandlingMode(bigintUnsignedHandlingMode)
+                        .binaryHandlingMode(binaryHandlingMode);
         return SourceFunctionProvider.of(builder.build(), false);
     }
 
@@ -258,7 +274,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         startupTimestamp,
                         rsList,
                         configUrl,
-                        workingMode);
+                        workingMode,
+                        decimalMode,
+                        temporalPrecisionMode,
+                        bigintUnsignedHandlingMode,
+                        binaryHandlingMode);
         source.metadataKeys = metadataKeys;
         source.producedDataType = producedDataType;
         return source;
@@ -301,7 +321,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                 && Objects.equals(this.configUrl, that.configUrl)
                 && Objects.equals(this.workingMode, that.workingMode)
                 && Objects.equals(this.producedDataType, that.producedDataType)
-                && Objects.equals(this.metadataKeys, that.metadataKeys);
+                && Objects.equals(this.metadataKeys, that.metadataKeys)
+                && Objects.equals(this.decimalMode, that.decimalMode)
+                && Objects.equals(this.temporalPrecisionMode, that.temporalPrecisionMode)
+                && Objects.equals(this.bigintUnsignedHandlingMode, that.bigintUnsignedHandlingMode)
+                && Objects.equals(this.binaryHandlingMode, that.binaryHandlingMode);
     }
 
     @Override
@@ -335,7 +359,11 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                 configUrl,
                 workingMode,
                 producedDataType,
-                metadataKeys);
+                metadataKeys,
+                decimalMode,
+                temporalPrecisionMode,
+                bigintUnsignedHandlingMode,
+                binaryHandlingMode);
     }
 
     @Override

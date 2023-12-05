@@ -33,15 +33,6 @@ public class OceanBaseOracleDialect extends OceanBaseDialect {
     }
 
     @Override
-    public String getQueryPrimaryKeySql(@Nonnull String dbName, @Nonnull String tableName) {
-        return String.format(
-                "SELECT COLUMN_NAME FROM ALL_CONSTRAINTS A, DBA_CONS_COLUMNS B "
-                        + "WHERE A.OWNER=B.OWNER AND A.CONSTRAINT_NAME=B.CONSTRAINT_NAME "
-                        + "AND A.OWNER='%s' AND A.TABLE_NAME='%s' AND A.CONSTRAINT_TYPE='P'",
-                dbName, tableName);
-    }
-
-    @Override
     public String getQueryNewChunkBoundSql(
             @Nonnull String dbName,
             @Nonnull String tableName,

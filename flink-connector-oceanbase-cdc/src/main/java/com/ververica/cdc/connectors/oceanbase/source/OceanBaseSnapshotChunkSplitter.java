@@ -91,7 +91,7 @@ public class OceanBaseSnapshotChunkSplitter implements AutoCloseable {
             @Nonnull String tableName,
             List<String> chunkKeyColumns,
             @Nonnull OceanBaseSnapshotChunkBound startChunkBound,
-            int chunkSize,
+            Integer chunkSize,
             JdbcConnection.ResultSetConsumer resultSetConsumer)
             throws Exception {
 
@@ -106,7 +106,7 @@ public class OceanBaseSnapshotChunkSplitter implements AutoCloseable {
                             chunkKeyColumns,
                             OceanBaseSnapshotChunkBound.START_BOUND,
                             OceanBaseSnapshotChunkBound.END_BOUND,
-                            Integer.MIN_VALUE,
+                            chunkSize,
                             resultSetConsumer));
             return;
         }

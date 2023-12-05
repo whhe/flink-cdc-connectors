@@ -205,6 +205,30 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                     .withDescription(
                             "The working mode of 'obcdc', can be `storage` (default value, supported from `obcdc` 3.1.3) or `memory`.");
 
+    public static final ConfigOption<String> DECIMAL_HANDLING_MODE =
+            ConfigOptions.key("decimal.handling.mode")
+                    .stringType()
+                    .defaultValue("precise")
+                    .withDescription("");
+
+    public static final ConfigOption<String> TIME_PRECISION_MODE =
+            ConfigOptions.key("time.precision.mode")
+                    .stringType()
+                    .defaultValue("adaptive_time_microseconds")
+                    .withDescription("");
+
+    public static final ConfigOption<String> BIGINT_UNSIGNED_HANDLING_MODE =
+            ConfigOptions.key("bigint.unsigned.handling.mode")
+                    .stringType()
+                    .defaultValue("long")
+                    .withDescription("");
+
+    public static final ConfigOption<String> BINARY_HANDLING_MODE =
+            ConfigOptions.key("binary.handling.mode")
+                    .stringType()
+                    .defaultValue("bytes")
+                    .withDescription("");
+
     @Override
     public DynamicTableSource createDynamicTableSource(Context context) {
         final FactoryUtil.TableFactoryHelper helper =
@@ -245,6 +269,10 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
         String rsList = config.get(RS_LIST);
         String configUrl = config.get(CONFIG_URL);
         String workingMode = config.get(WORKING_MODE);
+        String decimalMode = config.get(DECIMAL_HANDLING_MODE);
+        String temporalPrecisionMode = config.get(TIME_PRECISION_MODE);
+        String bigintUnsignedHandlingMode = config.get(BIGINT_UNSIGNED_HANDLING_MODE);
+        String binaryHandlingMode = config.get(BINARY_HANDLING_MODE);
 
         OptionUtils.printOptions(IDENTIFIER, ((Configuration) config).toMap());
 
@@ -275,7 +303,11 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                 startupTimestamp,
                 rsList,
                 configUrl,
-                workingMode);
+                workingMode,
+                decimalMode,
+                temporalPrecisionMode,
+                bigintUnsignedHandlingMode,
+                binaryHandlingMode);
     }
 
     @Override
@@ -317,6 +349,10 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
         options.add(RS_LIST);
         options.add(CONFIG_URL);
         options.add(WORKING_MODE);
+        options.add(DECIMAL_HANDLING_MODE);
+        options.add(TIME_PRECISION_MODE);
+        options.add(BIGINT_UNSIGNED_HANDLING_MODE);
+        options.add(BINARY_HANDLING_MODE);
         return options;
     }
 

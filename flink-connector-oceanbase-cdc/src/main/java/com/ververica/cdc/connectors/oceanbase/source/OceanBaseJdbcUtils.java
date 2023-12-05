@@ -20,7 +20,6 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -35,15 +34,24 @@ public class OceanBaseJdbcUtils {
             String dbName,
             String tableName)
             throws SQLException {
-        List<String> result = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection();
-                Statement statement = connection.createStatement()) {
-            ResultSet rs = statement.executeQuery(dialect.getQueryPrimaryKeySql(dbName, tableName));
-            while (rs.next()) {
-                result.add(rs.getString(1));
+        try (Connection connection = dataSource.getConnection()) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            final List<String> pkColumnNames = new ArrayList<>();
+            String catalog, schema;
+            if (dialect instanceof OceanBaseMysqlDialect) {
+                catalog = dbName;
+                schema = null;
+            } else {
+                catalog = null;
+                schema = dbName;
             }
+            try (ResultSet rs = metaData.getPrimaryKeys(catalog, schema, tableName)) {
+                while (rs.next()) {
+                    pkColumnNames.add(rs.getString(4));
+                }
+            }
+            return pkColumnNames;
         }
-        return result;
     }
 
     public static List<String> getTables(

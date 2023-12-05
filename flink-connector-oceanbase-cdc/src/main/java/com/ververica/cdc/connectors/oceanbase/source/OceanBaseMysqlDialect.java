@@ -33,13 +33,6 @@ public class OceanBaseMysqlDialect extends OceanBaseDialect {
     }
 
     @Override
-    public String getQueryPrimaryKeySql(@Nonnull String dbName, @Nonnull String tableName) {
-        return String.format(
-                "SELECT COLUMN_NAME FROM information_schema.statistics WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s' AND upper(INDEX_NAME) = 'PRIMARY'",
-                dbName, tableName);
-    }
-
-    @Override
     public String getQueryNewChunkBoundSql(
             @Nonnull String dbName,
             @Nonnull String tableName,

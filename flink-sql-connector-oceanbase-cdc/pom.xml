@@ -50,11 +50,8 @@ under the License.
                             <shadeTestJar>false</shadeTestJar>
                             <artifactSet>
                                 <includes>
-                                    <include>io.debezium:debezium-api</include>
-                                    <include>io.debezium:debezium-embedded</include>
-                                    <include>io.debezium:debezium-core</include>
-                                    <include>com.ververica:flink-connector-debezium</include>
-                                    <include>com.ververica:flink-connector-oceanbase-cdc</include>
+                                    <include>io.debezium:*</include>
+                                    <include>com.ververica:*</include>
                                     <include>com.zaxxer:HikariCP</include>
                                     <include>mysql:mysql-connector-java</include>
                                     <include>com.oceanbase:*</include>

@@ -26,8 +26,6 @@ public abstract class OceanBaseDialect implements Serializable {
 
     public abstract String quoteIdentifier(@Nonnull String identifier);
 
-    public abstract String getQueryPrimaryKeySql(@Nonnull String dbName, @Nonnull String tableName);
-
     public abstract String getQueryNewChunkBoundSql(
             @Nonnull String dbName,
             @Nonnull String tableName,

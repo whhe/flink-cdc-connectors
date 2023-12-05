@@ -42,14 +42,22 @@ import com.oceanbase.clogproxy.client.listener.RecordListener;
 import com.oceanbase.oms.logmessage.LogMessage;
 import com.ververica.cdc.connectors.oceanbase.table.OceanBaseDeserializationSchema;
 import com.ververica.cdc.connectors.oceanbase.table.OceanBaseRecord;
+import com.ververica.cdc.connectors.oceanbase.table.OceanBaseTableSchema;
+import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import io.debezium.jdbc.JdbcConnection;
+import io.debezium.relational.TableSchema;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.connect.data.Field;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -93,6 +101,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final Integer connectMaxRetries;
     private final String hostname;
     private final Integer port;
+    private final String compatibleMode;
     private final OceanBaseDialect dialect;
     private final String jdbcDriver;
     private final Properties jdbcProperties;
@@ -105,6 +114,11 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final ClientConf logProxyClientConf;
     private final ObReaderConfig obReaderConfig;
     private final OceanBaseDeserializationSchema<T> deserializer;
+    private final DebeziumDeserializationSchema<T> debeziumDeserializer;
+    private final String decimalMode;
+    private final String temporalPrecisionMode;
+    private final String bigintUnsignedHandlingMode;
+    private final String binaryHandlingMode;
 
     private final AtomicBoolean snapshotCompleted = new AtomicBoolean(false);
     private final List<OceanBaseRecord> changeRecordBuffer = new LinkedList<>();
@@ -147,7 +161,12 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             int logProxyPort,
             ClientConf logProxyClientConf,
             ObReaderConfig obReaderConfig,
-            OceanBaseDeserializationSchema<T> deserializer) {
+            OceanBaseDeserializationSchema<T> deserializer,
+            DebeziumDeserializationSchema<T> debeziumDeserializer,
+            String decimalMode,
+            String temporalPrecisionMode,
+            String bigintUnsignedHandlingMode,
+            String binaryHandlingMode) {
         this.snapshot = checkNotNull(snapshot);
         this.username = checkNotNull(username);
         this.password = checkNotNull(password);
@@ -159,6 +178,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.connectMaxRetries = connectMaxRetries;
         this.hostname = hostname;
         this.port = port;
+        this.compatibleMode = compatibleMode;
         this.dialect =
                 "mysql".equalsIgnoreCase(compatibleMode)
                         ? new OceanBaseMysqlDialect()
@@ -173,7 +193,15 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.logProxyPort = checkNotNull(logProxyPort);
         this.logProxyClientConf = checkNotNull(logProxyClientConf);
         this.obReaderConfig = checkNotNull(obReaderConfig);
-        this.deserializer = checkNotNull(deserializer);
+        this.deserializer = deserializer;
+        this.debeziumDeserializer = debeziumDeserializer;
+        if (deserializer == null && debeziumDeserializer == null) {
+            throw new IllegalArgumentException("deserializer should not be null");
+        }
+        this.decimalMode = decimalMode;
+        this.temporalPrecisionMode = temporalPrecisionMode;
+        this.bigintUnsignedHandlingMode = bigintUnsignedHandlingMode;
+        this.binaryHandlingMode = binaryHandlingMode;
     }
 
     @Override
@@ -372,21 +400,105 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private JdbcConnection.ResultSetConsumer getResultSetConsumer(
             OceanBaseRecord.SourceInfo sourceInfo) {
         return rs -> {
-            ResultSetMetaData metaData = rs.getMetaData();
-            while (rs.next()) {
-                Map<String, Object> fieldMap = new HashMap<>();
-                for (int i = 0; i < metaData.getColumnCount(); i++) {
-                    fieldMap.put(metaData.getColumnName(i + 1), rs.getObject(i + 1));
+            if (deserializer != null) {
+                ResultSetMetaData metaData = rs.getMetaData();
+                while (rs.next()) {
+                    Map<String, Object> fieldMap = new HashMap<>();
+                    for (int i = 0; i < metaData.getColumnCount(); i++) {
+                        fieldMap.put(metaData.getColumnName(i + 1), rs.getObject(i + 1));
+                    }
+                    OceanBaseRecord record = new OceanBaseRecord(sourceInfo, fieldMap);
+                    try {
+                        deserializer.deserialize(record, outputCollector);
+                    } catch (Exception e) {
+                        LOG.error("Deserialize snapshot record failed ", e);
+                        throw new FlinkRuntimeException(e);
+                    }
                 }
-                OceanBaseRecord record = new OceanBaseRecord(sourceInfo, fieldMap);
-                try {
-                    deserializer.deserialize(record, outputCollector);
-                } catch (Exception e) {
-                    LOG.error("Deserialize snapshot record failed ", e);
-                    throw new FlinkRuntimeException(e);
+            } else {
+                assert debeziumDeserializer != null;
+                String topicName =
+                        String.format(
+                                "%s.%s.%s",
+                                sourceInfo.getTenant(),
+                                sourceInfo.getDatabase(),
+                                sourceInfo.getTable());
+                Map<String, String> partition =
+                        getSourcePartition(
+                                sourceInfo.getTenant(),
+                                sourceInfo.getDatabase(),
+                                sourceInfo.getTable());
+                // the offset here is useless
+                Map<String, Object> offset = getSourceOffset(resolvedTimestamp);
+
+                String db, schema;
+                if ("mysql".equalsIgnoreCase(compatibleMode)) {
+                    db = sourceInfo.getDatabase();
+                    schema = null;
+                } else {
+                    db = null;
+                    schema = sourceInfo.getDatabase();
+                }
+                Struct source =
+                        OceanBaseTableSchema.sourceStruct(
+                                sourceInfo.getTenant(), db, schema, sourceInfo.getTable(), null);
+                TableSchema tableSchema =
+                        OceanBaseTableSchema.getTableSchema(
+                                getDataSource(),
+                                compatibleMode,
+                                sourceInfo.getTenant(),
+                                db,
+                                schema,
+                                sourceInfo.getTable(),
+                                decimalMode,
+                                temporalPrecisionMode,
+                                bigintUnsignedHandlingMode,
+                                binaryHandlingMode);
+
+                List<Field> fields = tableSchema.valueSchema().fields();
+
+                while (rs.next()) {
+                    Object[] fieldValues = new Object[fields.size()];
+                    for (Field field : fields) {
+                        fieldValues[field.index()] = rs.getObject(field.name());
+                    }
+                    Struct value = tableSchema.valueFromColumnData(fieldValues);
+                    Struct struct =
+                            tableSchema.getEnvelopeSchema().read(value, source, Instant.now());
+                    try {
+                        debeziumDeserializer.deserialize(
+                                new SourceRecord(
+                                        partition,
+                                        offset,
+                                        topicName,
+                                        null,
+                                        null,
+                                        null,
+                                        struct.schema(),
+                                        struct),
+                                outputCollector);
+                    } catch (Exception e) {
+                        LOG.error("Deserialize snapshot record failed ", e);
+                        throw new FlinkRuntimeException(e);
+                    }
                 }
             }
         };
+    }
+
+    private Map<String, String> getSourcePartition(
+            String tenantName, String databaseName, String tableName) {
+        Map<String, String> sourcePartition = new HashMap<>();
+        sourcePartition.put("tenant", tenantName);
+        sourcePartition.put("database", databaseName);
+        sourcePartition.put("table", tableName);
+        return sourcePartition;
+    }
+
+    private Map<String, Object> getSourceOffset(long timestamp) {
+        Map<String, Object> sourceOffset = new HashMap<>();
+        sourceOffset.put("timestamp", timestamp);
+        return sourceOffset;
     }
 
     protected void readChangeRecords() throws InterruptedException, TimeoutException {
@@ -433,7 +545,15 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                     changeRecordBuffer.forEach(
                                             r -> {
                                                 try {
-                                                    deserializer.deserialize(r, outputCollector);
+                                                    if (deserializer != null) {
+                                                        deserializer.deserialize(
+                                                                r, outputCollector);
+                                                    } else {
+                                                        assert debeziumDeserializer != null;
+                                                        debeziumDeserializer.deserialize(
+                                                                toSourceRecord(r), outputCollector);
+                                                    }
+
                                                 } catch (Exception e) {
                                                     throw new FlinkRuntimeException(e);
                                                 }
@@ -486,6 +606,92 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         return new OceanBaseRecord(sourceInfo, message.getOpt(), message.getFieldList());
     }
 
+    private SourceRecord toSourceRecord(OceanBaseRecord record) {
+        OceanBaseRecord.SourceInfo sourceInfo = record.getSourceInfo();
+        String topicName =
+                String.format(
+                        "%s.%s.%s",
+                        sourceInfo.getTenant(), sourceInfo.getDatabase(), sourceInfo.getTable());
+        String db, schema;
+        if ("mysql".equalsIgnoreCase(compatibleMode)) {
+            db = sourceInfo.getDatabase();
+            schema = null;
+        } else {
+            db = null;
+            schema = sourceInfo.getDatabase();
+        }
+        TableSchema tableSchema =
+                OceanBaseTableSchema.getTableSchema(
+                        getDataSource(),
+                        compatibleMode,
+                        sourceInfo.getTenant(),
+                        db,
+                        schema,
+                        sourceInfo.getTable(),
+                        decimalMode,
+                        temporalPrecisionMode,
+                        bigintUnsignedHandlingMode,
+                        binaryHandlingMode);
+        Struct source =
+                OceanBaseTableSchema.sourceStruct(
+                        sourceInfo.getTenant(),
+                        db,
+                        schema,
+                        sourceInfo.getTable(),
+                        String.valueOf(sourceInfo.getTimestampS()));
+        Map<String, String> partition =
+                getSourcePartition(
+                        sourceInfo.getTenant(), sourceInfo.getDatabase(), sourceInfo.getTable());
+        // the offset here is useless
+        Map<String, Object> offset = getSourceOffset(sourceInfo.getTimestampS());
+        Struct struct;
+
+        Schema valueSchema = tableSchema.valueSchema();
+        List<Field> fields = valueSchema.fields();
+        Struct before, after;
+        Object[] beforeFieldValues, afterFieldValues;
+        switch (record.getOpt()) {
+            case INSERT:
+                afterFieldValues = new Object[fields.size()];
+                for (Field field : fields) {
+                    afterFieldValues[field.index()] =
+                            record.getLogMessageFieldsAfter().get(field.name());
+                }
+                after = tableSchema.valueFromColumnData(afterFieldValues);
+                struct = tableSchema.getEnvelopeSchema().create(after, source, Instant.now());
+                break;
+            case DELETE:
+                beforeFieldValues = new Object[fields.size()];
+                for (Field field : fields) {
+                    beforeFieldValues[field.index()] =
+                            record.getLogMessageFieldsBefore().get(field.name());
+                }
+                before = tableSchema.valueFromColumnData(beforeFieldValues);
+                struct = tableSchema.getEnvelopeSchema().delete(before, source, Instant.now());
+                break;
+            case UPDATE:
+                beforeFieldValues = new Object[fields.size()];
+                afterFieldValues = new Object[fields.size()];
+                for (Field field : fields) {
+                    beforeFieldValues[field.index()] =
+                            record.getLogMessageFieldsBefore().get(field.name());
+                    afterFieldValues[field.index()] =
+                            record.getLogMessageFieldsAfter().get(field.name());
+                }
+                before = tableSchema.valueFromColumnData(beforeFieldValues);
+                after = tableSchema.valueFromColumnData(afterFieldValues);
+                struct =
+                        tableSchema
+                                .getEnvelopeSchema()
+                                .update(before, after, source, Instant.now());
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        return new SourceRecord(
+                partition, offset, topicName, null, null, null, struct.schema(), struct);
+    }
+
     @Override
     public void notifyCheckpointComplete(long l) {
         // do nothing
@@ -493,7 +699,10 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
     @Override
     public TypeInformation<T> getProducedType() {
-        return this.deserializer.getProducedType();
+        if (deserializer != null) {
+            return deserializer.getProducedType();
+        }
+        return debeziumDeserializer.getProducedType();
     }
 
     @Override

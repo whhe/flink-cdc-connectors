@@ -25,6 +25,7 @@ import com.oceanbase.clogproxy.client.util.ClientIdGenerator;
 import com.ververica.cdc.connectors.oceanbase.source.OceanBaseRichSourceFunction;
 import com.ververica.cdc.connectors.oceanbase.table.OceanBaseDeserializationSchema;
 import com.ververica.cdc.connectors.oceanbase.table.StartupMode;
+import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
@@ -74,8 +75,13 @@ public class OceanBaseSource {
         private String rsList;
         private String configUrl;
         private String workingMode;
+        private String decimalMode;
+        private String temporalPrecisionMode;
+        private String bigintUnsignedHandlingMode;
+        private String binaryHandlingMode;
 
         private OceanBaseDeserializationSchema<T> deserializer;
+        private DebeziumDeserializationSchema<T> debeziumDeserializer;
 
         public Builder<T> startupMode(StartupMode startupMode) {
             this.startupMode = startupMode;
@@ -212,30 +218,34 @@ public class OceanBaseSource {
             return this;
         }
 
+        public Builder<T> deserializer(DebeziumDeserializationSchema<T> debeziumDeserializer) {
+            this.debeziumDeserializer = debeziumDeserializer;
+            return this;
+        }
+
+        public Builder<T> decimalMode(String decimalMode) {
+            this.decimalMode = decimalMode;
+            return this;
+        }
+
+        public Builder<T> temporalPrecisionMode(String temporalPrecisionMode) {
+            this.temporalPrecisionMode = temporalPrecisionMode;
+            return this;
+        }
+
+        public Builder<T> bigintUnsignedHandlingMode(String bigintUnsignedHandlingMode) {
+            this.bigintUnsignedHandlingMode = bigintUnsignedHandlingMode;
+            return this;
+        }
+
+        public Builder<T> binaryHandlingMode(String binaryHandlingMode) {
+            this.binaryHandlingMode = binaryHandlingMode;
+            return this;
+        }
+
         public SourceFunction<T> build() {
             switch (startupMode) {
                 case INITIAL:
-                    checkNotNull(hostname, "hostname shouldn't be null on startup mode 'initial'");
-                    checkNotNull(port, "port shouldn't be null on startup mode 'initial'");
-                    if (compatibleMode == null) {
-                        compatibleMode = "mysql";
-                    }
-                    if (jdbcDriver == null) {
-                        jdbcDriver = "com.mysql.jdbc.Driver";
-                    }
-                    if (snapshotChunkEnabled == null) {
-                        snapshotChunkEnabled = true;
-                    }
-                    if (snapshotChunkEnabled) {
-                        if (connectionPoolSize == null) {
-                            connectionPoolSize = 20;
-                        }
-                        if (snapshotChunkSize == null) {
-                            snapshotChunkSize = 1000;
-                        }
-                    }
-                    startupTimestamp = 0L;
-                    break;
                 case LATEST_OFFSET:
                     startupTimestamp = 0L;
                     break;
@@ -249,12 +259,18 @@ public class OceanBaseSource {
                             startupMode + " mode is not supported.");
             }
 
-            if (!startupMode.equals(StartupMode.INITIAL)
+            if (startupMode.equals(StartupMode.INITIAL) || deserializer == null) {
+                checkNotNull(hostname, "hostname shouldn't be null");
+                checkNotNull(port, "port shouldn't be null");
+            }
+
+            if ((hostname == null || port == null)
                     && (StringUtils.isNotEmpty(databaseName)
                             || StringUtils.isNotEmpty(tableName))) {
                 throw new IllegalArgumentException(
-                        "If startup mode is not 'INITIAL', 'database-name' and 'table-name' must not be configured");
+                        "If 'hostname' or 'port' is not configured, 'database-name' and 'table-name' must not be configured");
             }
+
             if (StringUtils.isNotEmpty(databaseName) || StringUtils.isNotEmpty(tableName)) {
                 if (StringUtils.isEmpty(databaseName) || StringUtils.isEmpty(tableName)) {
                     throw new IllegalArgumentException(
@@ -264,6 +280,25 @@ public class OceanBaseSource {
                 checkNotNull(
                         tableList,
                         "'database-name', 'table-name' or 'table-list' should be configured");
+            }
+
+            if (compatibleMode == null) {
+                compatibleMode = "mysql";
+            }
+
+            if (jdbcDriver == null) {
+                jdbcDriver = "com.mysql.jdbc.Driver";
+            }
+            if (snapshotChunkEnabled == null) {
+                snapshotChunkEnabled = true;
+            }
+            if (connectionPoolSize == null) {
+                connectionPoolSize = 20;
+            }
+            if (!snapshotChunkEnabled) {
+                snapshotChunkSize = null;
+            } else if (snapshotChunkSize == null) {
+                snapshotChunkSize = 1000;
             }
 
             if (serverTimeZone == null) {
@@ -307,6 +342,19 @@ public class OceanBaseSource {
             obReaderConfig.setStartTimestamp(startupTimestamp);
             obReaderConfig.setTimezone(serverTimeZone);
 
+            if (decimalMode == null) {
+                decimalMode = "precise";
+            }
+            if (temporalPrecisionMode == null) {
+                temporalPrecisionMode = "adaptive_time_microseconds";
+            }
+            if (bigintUnsignedHandlingMode == null) {
+                bigintUnsignedHandlingMode = "long";
+            }
+            if (binaryHandlingMode == null) {
+                binaryHandlingMode = "bytes";
+            }
+
             return new OceanBaseRichSourceFunction<>(
                     StartupMode.INITIAL.equals(startupMode),
                     username,
@@ -330,7 +378,12 @@ public class OceanBaseSource {
                     logProxyPort,
                     clientConf,
                     obReaderConfig,
-                    deserializer);
+                    deserializer,
+                    debeziumDeserializer,
+                    decimalMode,
+                    temporalPrecisionMode,
+                    bigintUnsignedHandlingMode,
+                    binaryHandlingMode);
         }
     }
 }
