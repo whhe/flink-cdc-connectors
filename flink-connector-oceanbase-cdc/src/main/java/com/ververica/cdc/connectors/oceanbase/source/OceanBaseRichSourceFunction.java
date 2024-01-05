@@ -357,15 +357,17 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             if (chunkReader.getLowerBound().equals(stateBound)) {
                 resolvedChunkBound.put(table, chunkReader.getUpperBound());
             } else {
-                resolvedChunkReaderCache
-                        .computeIfAbsent(table, k -> new ArrayList<>())
-                        .add(chunkReader);
-                flushResolvedChunkCache(table);
+                List<OceanBaseSnapshotChunkReader> cachedReaderList =
+                        resolvedChunkReaderCache.computeIfAbsent(table, k -> new ArrayList<>());
+                synchronized (cachedReaderList) {
+                    cachedReaderList.add(chunkReader);
+                    flushResolvedChunkCache(table);
+                }
             }
         };
     }
 
-    private synchronized void flushResolvedChunkCache(String table) {
+    private void flushResolvedChunkCache(String table) {
         List<OceanBaseSnapshotChunkReader> cachedReaderList = resolvedChunkReaderCache.get(table);
         if (cachedReaderList == null || cachedReaderList.isEmpty()) {
             return;
