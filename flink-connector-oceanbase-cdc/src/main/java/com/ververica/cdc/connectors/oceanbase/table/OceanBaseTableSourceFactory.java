@@ -229,11 +229,13 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                     .defaultValue("bytes")
                     .withDescription("");
 
+    public static final String HIKARI_PREFIX = "hikari.properties.";
+
     @Override
     public DynamicTableSource createDynamicTableSource(Context context) {
         final FactoryUtil.TableFactoryHelper helper =
                 FactoryUtil.createTableFactoryHelper(this, context);
-        helper.validateExcept(JdbcUrlUtils.PROPERTIES_PREFIX);
+        helper.validateExcept(JdbcUrlUtils.PROPERTIES_PREFIX, HIKARI_PREFIX);
 
         ResolvedSchema physicalSchema = context.getCatalogTable().getResolvedSchema();
 
@@ -297,6 +299,7 @@ public class OceanBaseTableSourceFactory implements DynamicTableSourceFactory {
                 snapshotChunkKeyColumn,
                 snapshotChunkSize,
                 connectionPoolSize,
+                OptionUtils.getProperties(context.getCatalogTable().getOptions(), HIKARI_PREFIX),
                 logProxyHost,
                 logProxyPort,
                 logProxyClientId,

@@ -67,6 +67,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
     private final String snapshotChunkKeyColumn;
     private final Integer snapshotChunkSize;
     private final Integer connectionPoolSize;
+    private final Properties hikariProperties;
 
     private final String logProxyHost;
     private final Integer logProxyPort;
@@ -111,6 +112,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
             String snapshotChunkKeyColumn,
             Integer snapshotChunkSize,
             Integer connectionPoolSize,
+            Properties hikariProperties,
             String logProxyHost,
             Integer logProxyPort,
             String logProxyClientId,
@@ -142,6 +144,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
         this.snapshotChunkKeyColumn = snapshotChunkKeyColumn;
         this.snapshotChunkSize = snapshotChunkSize;
         this.connectionPoolSize = connectionPoolSize;
+        this.hikariProperties = hikariProperties;
         this.logProxyHost = checkNotNull(logProxyHost);
         this.logProxyPort = checkNotNull(logProxyPort);
         this.logProxyClientId = logProxyClientId;
@@ -199,6 +202,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         .snapshotChunkKeyColumn(snapshotChunkKeyColumn)
                         .snapshotChunkSize(snapshotChunkSize)
                         .connectionPoolSize(connectionPoolSize)
+                        .hikariProperties(hikariProperties)
                         .logProxyHost(logProxyHost)
                         .logProxyPort(logProxyPort)
                         .logProxyClientId(logProxyClientId)
@@ -268,6 +272,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                         snapshotChunkKeyColumn,
                         snapshotChunkSize,
                         connectionPoolSize,
+                        hikariProperties,
                         logProxyHost,
                         logProxyPort,
                         logProxyClientId,
@@ -313,6 +318,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                 && Objects.equals(this.snapshotChunkKeyColumn, that.snapshotChunkKeyColumn)
                 && Objects.equals(this.snapshotChunkSize, that.snapshotChunkSize)
                 && Objects.equals(this.connectionPoolSize, that.connectionPoolSize)
+                && Objects.equals(this.hikariProperties, that.hikariProperties)
                 && Objects.equals(this.logProxyHost, that.logProxyHost)
                 && Objects.equals(this.logProxyPort, that.logProxyPort)
                 && Objects.equals(this.logProxyClientId, that.logProxyClientId)

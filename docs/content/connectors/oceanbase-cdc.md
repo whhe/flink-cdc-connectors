@@ -349,6 +349,13 @@ The OceanBase CDC Connector contains some options for both sql and stream api as
                 <td>String</td>
                 <td>Option to pass custom JDBC URL properties. User can pass custom properties like 'jdbc.properties.useSSL' = 'false'.</td>
             </tr>
+            <tr>
+                <td>hikari.properties.*</td>
+                <td>optional</td>
+                <td style="word-wrap: break-word;">(none)</td>
+                <td>String</td>
+                <td>Option to pass custom Hikari Pool properties. User can pass custom properties like 'hikari.properties.maxLifetime' = '0'.</td>
+            </tr>
         </tbody>
     </table>
 </div>

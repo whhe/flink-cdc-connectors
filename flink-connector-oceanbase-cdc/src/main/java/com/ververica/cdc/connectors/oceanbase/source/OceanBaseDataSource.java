@@ -48,7 +48,8 @@ public class OceanBaseDataSource extends HikariDataSource {
             int connectMaxRetries,
             String jdbcDriver,
             Properties jdbcProperties,
-            int connectionPoolSize) {
+            int connectionPoolSize,
+            Properties hikariProperties) {
         super(
                 config(
                         hostname,
@@ -58,7 +59,8 @@ public class OceanBaseDataSource extends HikariDataSource {
                         connectTimeout,
                         jdbcDriver,
                         jdbcProperties,
-                        connectionPoolSize));
+                        connectionPoolSize,
+                        hikariProperties));
         this.connectRetryTimes = connectMaxRetries;
     }
 
@@ -70,8 +72,9 @@ public class OceanBaseDataSource extends HikariDataSource {
             Duration connectTimeout,
             String jdbcDriver,
             Properties jdbcProperties,
-            int connectionPoolSize) {
-        final HikariConfig hikariConfig = new HikariConfig();
+            int connectionPoolSize,
+            Properties hikariProperties) {
+        final HikariConfig hikariConfig = new HikariConfig(hikariProperties);
         hikariConfig.setPoolName(CONNECTION_POOL_PREFIX + hostname + ":" + port);
         hikariConfig.setJdbcUrl(getJdbcUrl(hostname, port, jdbcDriver, jdbcProperties));
         hikariConfig.setUsername(username);

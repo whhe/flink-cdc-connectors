@@ -63,6 +63,7 @@ public class OceanBaseSource {
         private String jdbcDriver;
         private Properties jdbcProperties;
         private Integer connectionPoolSize;
+        private Properties hikariProperties;
         private Boolean snapshotChunkEnabled;
         private String snapshotChunkKeyColumn;
         private Integer snapshotChunkSize;
@@ -160,6 +161,11 @@ public class OceanBaseSource {
 
         public Builder<T> connectionPoolSize(Integer connectionPoolSize) {
             this.connectionPoolSize = connectionPoolSize;
+            return this;
+        }
+
+        public Builder<T> hikariProperties(Properties hikariProperties) {
+            this.hikariProperties = hikariProperties;
             return this;
         }
 
@@ -371,6 +377,7 @@ public class OceanBaseSource {
                     jdbcDriver,
                     jdbcProperties,
                     connectionPoolSize,
+                    hikariProperties,
                     snapshotChunkEnabled,
                     snapshotChunkKeyColumn,
                     snapshotChunkSize,

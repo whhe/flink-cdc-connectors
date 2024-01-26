@@ -106,6 +106,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final String jdbcDriver;
     private final Properties jdbcProperties;
     private final Integer connectionPoolSize;
+    private final Properties hikariProperties;
     private final boolean snapshotChunkEnabled;
     private final String snapshotChunkKeyColumn;
     private final Integer snapshotChunkSize;
@@ -154,6 +155,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             String jdbcDriver,
             Properties jdbcProperties,
             Integer connectionPoolSize,
+            Properties hikariProperties,
             boolean snapshotChunkEnabled,
             String snapshotChunkKeyColumn,
             Integer snapshotChunkSize,
@@ -186,6 +188,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.jdbcDriver = jdbcDriver;
         this.jdbcProperties = jdbcProperties;
         this.connectionPoolSize = connectionPoolSize;
+        this.hikariProperties = hikariProperties;
         this.snapshotChunkEnabled = snapshotChunkEnabled;
         this.snapshotChunkKeyColumn = snapshotChunkKeyColumn;
         this.snapshotChunkSize = snapshotChunkSize;
@@ -250,7 +253,8 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             connectMaxRetries,
                             jdbcDriver,
                             jdbcProperties,
-                            connectionPoolSize);
+                            connectionPoolSize,
+                            hikariProperties);
         }
         return dataSource;
     }

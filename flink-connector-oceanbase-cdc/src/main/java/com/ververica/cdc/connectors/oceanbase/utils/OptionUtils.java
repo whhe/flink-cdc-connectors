@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Properties;
 
 /** A utility class to print configuration of connectors. */
 public class OptionUtils {
@@ -37,5 +38,18 @@ public class OptionUtils {
         for (String key : hideMap.keySet()) {
             LOG.info("{} = {}", key, hideMap.get(key));
         }
+    }
+
+    public static Properties getProperties(Map<String, String> tableOptions, String prefix) {
+        Properties properties = new Properties();
+        tableOptions.keySet().stream()
+                .filter(key -> key.startsWith(prefix))
+                .forEach(
+                        key -> {
+                            final String value = tableOptions.get(key);
+                            final String subKey = key.substring((prefix).length());
+                            properties.put(subKey, value);
+                        });
+        return properties;
     }
 }
