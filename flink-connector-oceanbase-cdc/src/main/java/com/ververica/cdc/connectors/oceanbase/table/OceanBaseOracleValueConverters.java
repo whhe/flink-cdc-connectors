@@ -42,9 +42,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.util.Locale;
 
 import static io.debezium.util.NumberConversions.BYTE_FALSE;
 
@@ -53,17 +59,53 @@ public class OceanBaseOracleValueConverters extends JdbcValueConverters {
 
     public static final String EMPTY_BLOB_FUNCTION = "EMPTY_BLOB()";
     public static final String EMPTY_CLOB_FUNCTION = "EMPTY_CLOB()";
-    public static final DateTimeFormatter ZONED_DATETIME_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS VV");
 
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("yyyy-MM-dd HH:mm:ss")
+                    .optionalStart()
+                    .appendPattern(".")
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, false)
+                    .optionalEnd()
+                    .toFormatter();
+
+    private static final DateTimeFormatter TIMESTAMP_AM_PM_SHORT_FORMATTER =
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("dd-MMM-yy hh.mm.ss")
+                    .optionalStart()
+                    .appendPattern(".")
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, false)
+                    .optionalEnd()
+                    .appendPattern(" a")
+                    .toFormatter(Locale.ENGLISH);
+
+    private static final DateTimeFormatter TIMESTAMP_TZ_FORMATTER =
+            new DateTimeFormatterBuilder()
+                    .parseCaseInsensitive()
+                    .appendPattern("yyyy-MM-dd HH:mm:ss")
+                    .optionalStart()
+                    .appendPattern(".")
+                    .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, false)
+                    .optionalEnd()
+                    .optionalStart()
+                    .appendPattern(" ")
+                    .optionalEnd()
+                    .appendOffset("+HH:MM", "")
+                    .toFormatter();
+
+    private final String serverTimezone;
     private final DataSource dataSource;
 
     public OceanBaseOracleValueConverters(
+            String serverTimezone,
             DataSource dataSource,
             JdbcValueConverters.DecimalMode decimalMode,
             TemporalPrecisionMode temporalPrecisionMode,
             CommonConnectorConfig.BinaryHandlingMode binaryHandlingMode) {
         super(decimalMode, temporalPrecisionMode, ZoneOffset.UTC, null, null, binaryHandlingMode);
+        this.serverTimezone = serverTimezone;
         this.dataSource = dataSource;
     }
 
@@ -273,7 +315,7 @@ public class OceanBaseOracleValueConverters extends JdbcValueConverters {
             }
         }
         if (data instanceof String) {
-            data = Timestamp.valueOf(((String) data).trim());
+            data = resolveTimestampStringAsInstant((String) data);
         }
         if (adaptiveTimePrecisionMode || adaptiveTimeMicrosecondsPrecisionMode) {
             if (getTimePrecision(column) <= 3) {
@@ -290,7 +332,7 @@ public class OceanBaseOracleValueConverters extends JdbcValueConverters {
     protected Object convertTimestampTZ(Column column, Field fieldDefn, Object data) {
         if (data instanceof String) {
             ZonedDateTime zonedDateTime =
-                    ZonedDateTime.parse(((String) data).trim(), ZONED_DATETIME_FORMAT);
+                    ZonedDateTime.parse(((String) data).trim(), TIMESTAMP_TZ_FORMATTER);
             data = Timestamp.from(zonedDateTime.toInstant());
         }
         if (data instanceof TIMESTAMPTZ) {
@@ -301,6 +343,16 @@ public class OceanBaseOracleValueConverters extends JdbcValueConverters {
             }
         }
         return convertTimestamp(column, fieldDefn, data);
+    }
+
+    protected Instant resolveTimestampStringAsInstant(String dateText) {
+        LocalDateTime dateTime;
+        if (dateText.indexOf(" AM") > 0 || dateText.indexOf(" PM") > 0) {
+            dateTime = LocalDateTime.from(TIMESTAMP_AM_PM_SHORT_FORMATTER.parse(dateText.trim()));
+        } else {
+            dateTime = LocalDateTime.from(TIMESTAMP_FORMATTER.parse(dateText.trim()));
+        }
+        return dateTime.atZone(ZoneId.of(serverTimezone)).toInstant();
     }
 
     @Override

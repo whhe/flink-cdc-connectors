@@ -97,6 +97,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final String databaseName;
     private final String tableName;
     private final String tableList;
+    private final String serverTimeZone;
     private final Duration connectTimeout;
     private final Integer connectMaxRetries;
     private final String hostname;
@@ -147,6 +148,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             String databaseName,
             String tableName,
             String tableList,
+            String serverTimeZone,
             Duration connectTimeout,
             Integer connectMaxRetries,
             String hostname,
@@ -176,6 +178,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         this.databaseName = databaseName;
         this.tableName = tableName;
         this.tableList = tableList;
+        this.serverTimeZone = serverTimeZone;
         this.connectTimeout = checkNotNull(connectTimeout);
         this.connectMaxRetries = connectMaxRetries;
         this.hostname = hostname;
@@ -450,6 +453,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                                 sourceInfo.getTenant(), db, schema, sourceInfo.getTable(), null);
                 TableSchema tableSchema =
                         OceanBaseTableSchema.getTableSchema(
+                                serverTimeZone,
                                 getDataSource(),
                                 compatibleMode,
                                 sourceInfo.getTenant(),
@@ -628,6 +632,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         }
         TableSchema tableSchema =
                 OceanBaseTableSchema.getTableSchema(
+                        serverTimeZone,
                         getDataSource(),
                         compatibleMode,
                         sourceInfo.getTenant(),

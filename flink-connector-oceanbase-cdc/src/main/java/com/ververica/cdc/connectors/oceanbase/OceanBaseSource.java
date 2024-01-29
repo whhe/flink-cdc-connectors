@@ -369,6 +369,7 @@ public class OceanBaseSource {
                     databaseName,
                     tableName,
                     tableList,
+                    serverTimeZone,
                     connectTimeout,
                     connectMaxRetries,
                     hostname,

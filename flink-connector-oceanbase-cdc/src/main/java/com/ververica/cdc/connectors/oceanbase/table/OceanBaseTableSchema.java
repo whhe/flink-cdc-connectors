@@ -56,6 +56,7 @@ public class OceanBaseTableSchema {
     }
 
     public static TableSchemaBuilder tableSchemaBuilder(
+            String serverTimezone,
             String compatibleMode,
             DataSource dataSource,
             String decimalMode,
@@ -74,6 +75,7 @@ public class OceanBaseTableSchema {
         } else {
             valueConverterProvider =
                     new OceanBaseOracleValueConverters(
+                            serverTimezone,
                             dataSource,
                             JdbcValueConverters.DecimalMode.valueOf(decimalMode.toUpperCase()),
                             TemporalPrecisionMode.parse(temporalPrecisionMode),
@@ -89,6 +91,7 @@ public class OceanBaseTableSchema {
     }
 
     public static TableSchema getTableSchema(
+            String serverTimezone,
             OceanBaseDataSource dataSource,
             String compatibleMode,
             String tenantName,
@@ -126,6 +129,7 @@ public class OceanBaseTableSchema {
             }
             tableSchema =
                     tableSchemaBuilder(
+                                    serverTimezone,
                                     compatibleMode,
                                     dataSource,
                                     decimalMode,
