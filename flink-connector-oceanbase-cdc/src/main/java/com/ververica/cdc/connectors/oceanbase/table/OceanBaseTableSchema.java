@@ -16,7 +16,7 @@
 
 package com.ververica.cdc.connectors.oceanbase.table;
 
-import com.ververica.cdc.connectors.oceanbase.source.OceanBaseDataSource;
+import com.ververica.cdc.connectors.oceanbase.source.OceanBaseConnectionProvider;
 import io.debezium.config.CommonConnectorConfig;
 import io.debezium.data.Envelope;
 import io.debezium.jdbc.JdbcValueConverters;
@@ -34,8 +34,6 @@ import io.debezium.util.SchemaNameAdjuster;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.SchemaBuilder;
 import org.apache.kafka.connect.data.Struct;
-
-import javax.sql.DataSource;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -58,7 +56,7 @@ public class OceanBaseTableSchema {
     public static TableSchemaBuilder tableSchemaBuilder(
             String serverTimezone,
             String compatibleMode,
-            DataSource dataSource,
+            OceanBaseConnectionProvider connectionProvider,
             String decimalMode,
             String temporalPrecisionMode,
             String bigintUnsignedHandlingMode,
@@ -76,7 +74,7 @@ public class OceanBaseTableSchema {
             valueConverterProvider =
                     new OceanBaseOracleValueConverters(
                             serverTimezone,
-                            dataSource,
+                            connectionProvider,
                             JdbcValueConverters.DecimalMode.valueOf(decimalMode.toUpperCase()),
                             TemporalPrecisionMode.parse(temporalPrecisionMode),
                             CommonConnectorConfig.BinaryHandlingMode.parse(binaryHandlingMode));
@@ -92,7 +90,7 @@ public class OceanBaseTableSchema {
 
     public static TableSchema getTableSchema(
             String serverTimezone,
-            OceanBaseDataSource dataSource,
+            OceanBaseConnectionProvider connectionProvider,
             String compatibleMode,
             String tenantName,
             String db,
@@ -106,7 +104,7 @@ public class OceanBaseTableSchema {
         TableSchema tableSchema = tableSchemaMap.get(topicName);
         if (tableSchema == null) {
             TableEditor tableEditor = Table.editor().tableId(new TableId(db, schema, tableName));
-            try (Connection connection = dataSource.getConnection()) {
+            try (Connection connection = connectionProvider.getConnection()) {
                 DatabaseMetaData metadata = connection.getMetaData();
                 try (ResultSet columnMetadata = metadata.getColumns(db, schema, tableName, null)) {
                     while (columnMetadata.next()) {
@@ -131,7 +129,7 @@ public class OceanBaseTableSchema {
                     tableSchemaBuilder(
                                     serverTimezone,
                                     compatibleMode,
-                                    dataSource,
+                                    connectionProvider,
                                     decimalMode,
                                     temporalPrecisionMode,
                                     bigintUnsignedHandlingMode,

@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.Properties;
 
 /** {@link HikariDataSource} extension to be used to maintain connections. */
-public class OceanBaseDataSource extends HikariDataSource {
+public class OceanBaseDataSource extends HikariDataSource implements OceanBaseConnectionProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(OceanBaseDataSource.class);
 
@@ -91,7 +91,7 @@ public class OceanBaseDataSource extends HikariDataSource {
         return hikariConfig;
     }
 
-    private static String getJdbcUrl(
+    public static String getJdbcUrl(
             String hostname, int port, String jdbcDriver, Properties jdbcProperties) {
         Properties properties = new Properties();
         properties.setProperty("useInformationSchema", "true");

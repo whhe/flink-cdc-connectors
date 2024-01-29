@@ -55,13 +55,13 @@ public class OceanBaseJdbcUtils {
     }
 
     public static List<String> getTables(
-            OceanBaseDataSource dataSource,
+            OceanBaseConnectionProvider connectionProvider,
             OceanBaseDialect dialect,
             String dbPattern,
             String tbPattern)
             throws SQLException {
         List<String> result = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionProvider.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
             if (dialect instanceof OceanBaseMysqlDialect) {
                 List<String> dbNames = getResultList(metaData.getCatalogs(), "TABLE_CAT");

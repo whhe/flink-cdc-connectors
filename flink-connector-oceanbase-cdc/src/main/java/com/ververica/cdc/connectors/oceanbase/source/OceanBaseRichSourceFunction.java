@@ -262,6 +262,20 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         return dataSource;
     }
 
+    private void closeDataSource() {
+        if (dataSource != null) {
+            dataSource.close();
+            dataSource = null;
+        }
+    }
+
+    private OceanBaseConnectionProvider getSimpleConnectionProvider() {
+        return OceanBaseConnectionProvider.simple(
+                OceanBaseDataSource.getJdbcUrl(hostname, port, jdbcDriver, jdbcProperties),
+                username,
+                password);
+    }
+
     private void initTableWhiteList() {
         if (tableSet != null && !tableSet.isEmpty()) {
             return;
@@ -351,6 +365,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         chunkSplitter.waitTermination();
         chunkSplitter.close();
         chunkSplitter.checkException();
+        closeDataSource();
 
         snapshotCompleted.set(true);
         resolvedTimestamp = startTimestamp;
@@ -633,7 +648,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         TableSchema tableSchema =
                 OceanBaseTableSchema.getTableSchema(
                         serverTimeZone,
-                        getDataSource(),
+                        getSimpleConnectionProvider(),
                         compatibleMode,
                         sourceInfo.getTenant(),
                         db,
@@ -785,9 +800,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         if (chunkSplitter != null) {
             chunkSplitter.close();
         }
-        if (dataSource != null) {
-            dataSource.close();
-        }
+        closeDataSource();
         if (logProxyClient != null) {
             logProxyClient.stop();
         }

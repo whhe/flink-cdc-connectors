@@ -20,6 +20,7 @@ import com.oceanbase.jdbc.OceanBaseConnection;
 import com.oceanbase.jdbc.extend.datatype.TIMESTAMPLTZ;
 import com.oceanbase.jdbc.extend.datatype.TIMESTAMPTZ;
 import com.oceanbase.jdbc.internal.ObOracleDefs;
+import com.ververica.cdc.connectors.oceanbase.source.OceanBaseConnectionProvider;
 import io.debezium.DebeziumException;
 import io.debezium.config.CommonConnectorConfig;
 import io.debezium.config.CommonConnectorConfig.BinaryHandlingMode;
@@ -33,8 +34,6 @@ import io.debezium.time.NanoTimestamp;
 import io.debezium.util.NumberConversions;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.SchemaBuilder;
-
-import javax.sql.DataSource;
 
 import java.sql.Blob;
 import java.sql.Clob;
@@ -96,17 +95,17 @@ public class OceanBaseOracleValueConverters extends JdbcValueConverters {
                     .toFormatter();
 
     private final String serverTimezone;
-    private final DataSource dataSource;
+    private final OceanBaseConnectionProvider connectionProvider;
 
     public OceanBaseOracleValueConverters(
             String serverTimezone,
-            DataSource dataSource,
+            OceanBaseConnectionProvider connectionProvider,
             JdbcValueConverters.DecimalMode decimalMode,
             TemporalPrecisionMode temporalPrecisionMode,
             CommonConnectorConfig.BinaryHandlingMode binaryHandlingMode) {
         super(decimalMode, temporalPrecisionMode, ZoneOffset.UTC, null, null, binaryHandlingMode);
         this.serverTimezone = serverTimezone;
-        this.dataSource = dataSource;
+        this.connectionProvider = connectionProvider;
     }
 
     @Override
@@ -306,7 +305,7 @@ public class OceanBaseOracleValueConverters extends JdbcValueConverters {
 
     protected Object convertTimestamp(Column column, Field fieldDefn, Object data) {
         if (data instanceof TIMESTAMPLTZ) {
-            try (Connection connection = dataSource.getConnection()) {
+            try (Connection connection = connectionProvider.getConnection()) {
                 data =
                         ((TIMESTAMPLTZ) data)
                                 .timestampValue(connection.unwrap(OceanBaseConnection.class));
