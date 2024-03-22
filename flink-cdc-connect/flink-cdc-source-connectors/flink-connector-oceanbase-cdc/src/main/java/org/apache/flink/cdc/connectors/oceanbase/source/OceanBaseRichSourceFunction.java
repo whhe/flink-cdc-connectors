@@ -295,8 +295,17 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             LOG.info("Restore from timestamp: {}", resolvedTimestamp);
         }
 
+        String clientId = logProxyClientConf.getClientId() + "_" + System.currentTimeMillis();
+
         logProxyClient =
-                new LogProxyClient(logProxyHost, logProxyPort, obReaderConfig, logProxyClientConf);
+                new LogProxyClient(
+                        logProxyHost,
+                        logProxyPort,
+                        obReaderConfig,
+                        ClientConf.builder()
+                                .clientId(clientId)
+                                .connectTimeoutMs((int) connectTimeout.toMillis())
+                                .build());
 
         final CountDownLatch latch = new CountDownLatch(1);
 
@@ -362,7 +371,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
         LOG.info(
                 "Try to start LogProxyClient with client id: {}, config: {}",
-                logProxyClientConf.getClientId(),
+                clientId,
                 obReaderConfig);
         logProxyClient.start();
 
