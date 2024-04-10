@@ -315,7 +315,10 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
         LOG.info("Table list: {}", localTableSet);
         this.tableSet = localTableSet;
-        this.obReaderConfig.setTableWhiteList(String.format("%s.*.*", tenantName));
+        this.obReaderConfig.setTableWhiteList(
+                localTableSet.stream()
+                        .map(table -> String.format("%s.%s", tenantName, table))
+                        .collect(Collectors.joining("|")));
     }
 
     void readSnapshotRecords() throws Exception {

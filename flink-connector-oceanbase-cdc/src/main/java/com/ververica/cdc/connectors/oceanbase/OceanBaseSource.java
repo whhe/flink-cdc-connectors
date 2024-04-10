@@ -21,7 +21,7 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction;
 
 import com.oceanbase.clogproxy.client.config.ClientConf;
 import com.oceanbase.clogproxy.client.config.ObReaderConfig;
-import com.oceanbase.clogproxy.client.util.ClientIdGenerator;
+import com.oceanbase.clogproxy.client.util.ClientUtil;
 import com.ververica.cdc.connectors.oceanbase.source.OceanBaseRichSourceFunction;
 import com.ververica.cdc.connectors.oceanbase.table.OceanBaseDeserializationSchema;
 import com.ververica.cdc.connectors.oceanbase.table.StartupMode;
@@ -323,13 +323,14 @@ public class OceanBaseSource {
                 logProxyClientId =
                         String.format(
                                 "%s_%s_%s",
-                                ClientIdGenerator.generate(),
+                                ClientUtil.generateClientId(),
                                 Thread.currentThread().getId(),
                                 checkNotNull(tenantName));
             }
             ClientConf clientConf =
                     ClientConf.builder()
                             .clientId(logProxyClientId)
+                            .maxReconnectTimes(0)
                             .connectTimeoutMs((int) connectTimeout.toMillis())
                             .build();
 
