@@ -54,8 +54,11 @@ import org.apache.kafka.connect.source.SourceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -132,7 +135,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
     private final Map<String, List<OceanBaseSnapshotChunkReader>> resolvedChunkReaderCache =
             new ConcurrentHashMap<>();
     private transient volatile long resolvedTimestamp;
-    private transient volatile long startTimestamp;
+    private transient volatile Exception logProxyClientException;
     private transient OceanBaseDataSource dataSource;
     private transient OceanBaseSnapshotChunkSplitter chunkSplitter;
     private transient LogProxyClient logProxyClient;
@@ -223,20 +226,39 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
             LOG.info("Start to initial table whitelist");
             initTableWhiteList();
 
-            LOG.info("Start readChangeRecords process");
-            readChangeRecords();
-
             if (shouldReadSnapshot()) {
-                LOG.info("Snapshot reading started");
+                long startTimestamp = getCurrentTimestamp();
+                LOG.info("Snapshot reading started from timestamp: {}", startTimestamp);
                 readSnapshotRecords();
                 LOG.info("Snapshot reading finished");
+                resolvedTimestamp = startTimestamp;
             } else {
                 LOG.info("Snapshot reading skipped");
             }
 
-            logProxyClient.join();
+            LOG.info("Start readChangeRecords process");
+            readChangeRecords();
+
+            if (logProxyClientException != null) {
+                throw new RuntimeException(logProxyClientException);
+            }
         } finally {
             cancel();
+        }
+    }
+
+    public long getCurrentTimestamp() throws SQLException {
+        try (Connection connection = getDataSource().getConnection();
+                Statement statement = connection.createStatement()) {
+            ResultSet rs =
+                    statement.executeQuery(
+                            "mysql".equalsIgnoreCase(compatibleMode)
+                                    ? "SELECT CURRENT_TIMESTAMP"
+                                    : "SELECT CURRENT_TIMESTAMP FROM DUAL");
+            if (rs.next()) {
+                return rs.getTimestamp(1).toInstant().getEpochSecond();
+            }
+            throw new RuntimeException("Failed to query CURRENT_TIMESTAMP");
         }
     }
 
@@ -371,7 +393,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         closeDataSource();
 
         snapshotCompleted.set(true);
-        resolvedTimestamp = startTimestamp;
     }
 
     private OceanBaseSnapshotChunkSplitter.ReadCompleteListener getCheckpointListener() {
@@ -561,7 +582,6 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                             case BEGIN:
                                 if (!started) {
                                     started = true;
-                                    startTimestamp = Long.parseLong(message.getSafeTimestamp());
                                     latch.countDown();
                                 }
                                 break;
@@ -617,6 +637,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                     @Override
                     public void onException(LogProxyClientException e) {
                         LOG.error("LogProxyClient exception", e);
+                        logProxyClientException = e;
                         logProxyClient.stop();
                     }
                 });
@@ -626,7 +647,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         if (!latch.await(connectTimeout.getSeconds(), TimeUnit.SECONDS)) {
             throw new TimeoutException("Timeout to receive messages from LogProxy");
         }
-        LOG.info("LogProxyClient started from timestamp: {}", startTimestamp);
+        LOG.info("LogProxyClient started successfully");
+
+        logProxyClient.join();
     }
 
     private OceanBaseRecord getChangeRecord(LogMessage message) {
