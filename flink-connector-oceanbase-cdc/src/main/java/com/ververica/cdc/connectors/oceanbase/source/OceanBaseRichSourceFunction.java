@@ -543,7 +543,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
                         obReaderConfig,
                         ClientConf.builder()
                                 .clientId(clientId)
-                                .maxReconnectTimes(0)
+                                .maxReconnectTimes(connectMaxRetries)
                                 .connectTimeoutMs((int) connectTimeout.toMillis())
                                 .build());
 

@@ -330,7 +330,7 @@ public class OceanBaseSource {
             ClientConf clientConf =
                     ClientConf.builder()
                             .clientId(logProxyClientId)
-                            .maxReconnectTimes(0)
+                            .maxReconnectTimes(connectMaxRetries)
                             .connectTimeoutMs((int) connectTimeout.toMillis())
                             .build();
 
