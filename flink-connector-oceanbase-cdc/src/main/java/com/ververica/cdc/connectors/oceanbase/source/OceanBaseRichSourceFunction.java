@@ -636,7 +636,7 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
 
                     @Override
                     public void onException(LogProxyClientException e) {
-                        LOG.error("LogProxyClient exception", e);
+                        // TODO trigger onException synchronously
                         logProxyClientException = e;
                         logProxyClient.stop();
                     }
@@ -650,6 +650,9 @@ public class OceanBaseRichSourceFunction<T> extends RichSourceFunction<T>
         LOG.info("LogProxyClient started successfully");
 
         logProxyClient.join();
+
+        // TODO remove it after update the oblogclient package
+        Thread.sleep(5000);
     }
 
     private OceanBaseRecord getChangeRecord(LogMessage message) {
