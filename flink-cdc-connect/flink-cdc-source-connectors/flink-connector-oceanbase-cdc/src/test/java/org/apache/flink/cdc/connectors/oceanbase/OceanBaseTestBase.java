@@ -17,6 +17,7 @@
 
 package org.apache.flink.cdc.connectors.oceanbase;
 
+import org.apache.flink.cdc.connectors.oceanbase.source.connection.OceanBaseConnection;
 import org.apache.flink.table.planner.factories.TestValuesTableFactory;
 import org.apache.flink.test.util.AbstractTestBase;
 
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -43,6 +45,22 @@ public abstract class OceanBaseTestBase extends AbstractTestBase {
     protected abstract String getCompatibleMode();
 
     protected abstract Connection getJdbcConnection() throws SQLException;
+
+    public OceanBaseConnection getConnection(
+            String host, int port, String username, String password) {
+        return new OceanBaseConnection(
+                host,
+                port,
+                username,
+                password,
+                Duration.ofMillis(1000),
+                getCompatibleMode(),
+                "mysql".equalsIgnoreCase(getCompatibleMode())
+                        ? "com.mysql.cj.jdbc.Driver"
+                        : "com.oceanbase.jdbc.Driver",
+                null,
+                getClass().getClassLoader());
+    }
 
     public void setGlobalTimeZone(String serverTimeZone) throws SQLException {
         try (Connection connection = getJdbcConnection();

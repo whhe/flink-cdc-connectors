@@ -24,6 +24,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.MountableFile;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Duration;
 
 /** Utils to help test. */
@@ -65,5 +68,12 @@ public class OceanBaseContainerUtils {
                 .waitingFor(Wait.forLogMessage(".*boot success!.*", 1))
                 .withStartupTimeout(Duration.ofMinutes(1))
                 .withLogConsumer(new Slf4jLogConsumer(LOG));
+    }
+
+    public static Connection getJdbcConnection() throws SQLException {
+        return DriverManager.getConnection(
+                "jdbc:mysql://" + OB_SERVER_HOST + ":" + OB_SERVER_PORT + "/?useSSL=false",
+                USERNAME,
+                PASSWORD);
     }
 }
