@@ -73,6 +73,7 @@ public class OceanBaseUtils {
         // accurate than COUNT(*), but is more efficient for large table.
         final String useDatabaseStatement = String.format("USE `%s`;", tableId.catalog());
         final String rowCountQuery = String.format("SHOW TABLE STATUS LIKE '%s';", tableId.table());
+        jdbc.setAutoCommit(false);
         jdbc.executeWithoutCommitting(useDatabaseStatement);
         return jdbc.queryAndMap(
                 rowCountQuery,
