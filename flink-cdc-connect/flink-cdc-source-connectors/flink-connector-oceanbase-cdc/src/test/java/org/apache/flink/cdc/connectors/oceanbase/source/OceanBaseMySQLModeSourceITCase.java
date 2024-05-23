@@ -196,6 +196,7 @@ public class OceanBaseMySQLModeSourceITCase extends OceanBaseTestBase {
                                 + " 'password' = '%s',"
                                 + " 'logproxy.host' = '%s',"
                                 + " 'logproxy.port' = '%s',"
+                                + " 'rootserver-list' = '%s',"
                                 + " 'working-mode' = 'memory',"
                                 + " 'tenant-name' = '%s',"
                                 + " 'compatible-mode' = '%s',"
@@ -213,6 +214,7 @@ public class OceanBaseMySQLModeSourceITCase extends OceanBaseTestBase {
                         OceanBaseContainerUtils.PASSWORD,
                         OceanBaseContainerUtils.LOG_PROXY_HOST,
                         OceanBaseContainerUtils.LOG_PROXY_PORT,
+                        OceanBaseContainerUtils.RS_LIST,
                         OceanBaseContainerUtils.TENANT,
                         getCompatibleMode(),
                         databaseName,

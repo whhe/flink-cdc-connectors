@@ -40,7 +40,7 @@ public class LogMessageOffset extends Offset {
     public static final String TRANSACTIONS_TO_SKIP_KEY = "trans";
     public static final String EVENTS_TO_SKIP_KEY = "events";
 
-    public static final LogMessageOffset INITIAL_OFFSET = new LogMessageOffset(Long.MIN_VALUE);
+    public static final LogMessageOffset INITIAL_OFFSET = new LogMessageOffset(0);
     public static final LogMessageOffset NO_STOPPING_OFFSET = new LogMessageOffset(Long.MAX_VALUE);
 
     public LogMessageOffset(Map<String, ?> offset) {

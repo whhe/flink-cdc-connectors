@@ -220,10 +220,10 @@ public class OceanBaseOffsetContext implements OffsetContext {
             String trans = (String) offset.get("trans");
             String events = (String) offset.get("events");
 
+            long ts = timestamp == null ? 0 : Long.parseLong(timestamp);
+
             offsetContext.setCheckpoint(
-                    timestamp == null
-                            ? Instant.now()
-                            : Instant.ofEpochSecond(Long.parseLong(timestamp)),
+                    ts == 0 ? Instant.now() : Instant.ofEpochSecond(ts),
                     (String) offset.get("commit_version"),
                     trans == null ? 0 : Long.parseLong(trans),
                     events == null ? 0 : Long.parseLong(events));
