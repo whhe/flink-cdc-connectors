@@ -88,7 +88,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
     private final double distributionFactorLower;
     private final String chunkKeyColumn;
     private final boolean closeIdlerReaders;
-    private final boolean scanNewlyAddedTableEnabled;
+    private final boolean skipSnapshotBackfill;
 
     // --------------------------------------------------------------------------------------------
     // Mutable attributes
@@ -160,7 +160,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
         this.distributionFactorLower = 0;
         this.chunkKeyColumn = null;
         this.closeIdlerReaders = false;
-        this.scanNewlyAddedTableEnabled = false;
+        this.skipSnapshotBackfill = false;
 
         this.producedDataType = physicalSchema.toPhysicalRowDataType();
         this.metadataKeys = Collections.emptyList();
@@ -196,7 +196,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
             double distributionFactorLower,
             String chunkKeyColumn,
             boolean closeIdlerReaders,
-            boolean scanNewlyAddedTableEnabled) {
+            boolean skipSnapshotBackfill) {
         this.physicalSchema = physicalSchema;
         this.startupOptions = checkNotNull(startupOptions);
         this.username = checkNotNull(username);
@@ -233,7 +233,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
         this.distributionFactorLower = distributionFactorLower;
         this.chunkKeyColumn = chunkKeyColumn;
         this.closeIdlerReaders = closeIdlerReaders;
-        this.scanNewlyAddedTableEnabled = scanNewlyAddedTableEnabled;
+        this.skipSnapshotBackfill = skipSnapshotBackfill;
 
         this.producedDataType = physicalSchema.toPhysicalRowDataType();
         this.metadataKeys = Collections.emptyList();
@@ -294,6 +294,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                             .distributionFactorUpper(distributionFactorUpper)
                             .distributionFactorLower(distributionFactorLower)
                             .closeIdleReaders(closeIdlerReaders)
+                            .skipSnapshotBackfill(skipSnapshotBackfill)
                             .chunkKeyColumn(chunkKeyColumn)
                             .build();
             return SourceProvider.of(incrementalSource);
@@ -392,7 +393,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                             distributionFactorLower,
                             chunkKeyColumn,
                             closeIdlerReaders,
-                            scanNewlyAddedTableEnabled);
+                            skipSnapshotBackfill);
             source.metadataKeys = metadataKeys;
             source.producedDataType = producedDataType;
             return source;
@@ -471,7 +472,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                 && Objects.equals(this.distributionFactorLower, that.distributionFactorLower)
                 && Objects.equals(this.chunkKeyColumn, that.chunkKeyColumn)
                 && Objects.equals(this.closeIdlerReaders, that.closeIdlerReaders)
-                && Objects.equals(this.scanNewlyAddedTableEnabled, that.scanNewlyAddedTableEnabled)
+                && Objects.equals(this.skipSnapshotBackfill, that.skipSnapshotBackfill)
                 && Objects.equals(this.producedDataType, that.producedDataType)
                 && Objects.equals(this.metadataKeys, that.metadataKeys);
     }
@@ -513,7 +514,7 @@ public class OceanBaseTableSource implements ScanTableSource, SupportsReadingMet
                 distributionFactorLower,
                 chunkKeyColumn,
                 closeIdlerReaders,
-                scanNewlyAddedTableEnabled,
+                skipSnapshotBackfill,
                 producedDataType,
                 metadataKeys);
     }

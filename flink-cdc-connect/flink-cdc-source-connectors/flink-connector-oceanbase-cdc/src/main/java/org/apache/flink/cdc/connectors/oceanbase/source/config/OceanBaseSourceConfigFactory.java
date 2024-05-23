@@ -145,7 +145,7 @@ public class OceanBaseSourceConfigFactory extends JdbcSourceConfigFactory {
                 connectMaxRetries,
                 connectionPoolSize,
                 chunkKeyColumn,
-                true,
+                skipSnapshotBackfill,
                 scanNewlyAddedTableEnabled);
     }
 }
