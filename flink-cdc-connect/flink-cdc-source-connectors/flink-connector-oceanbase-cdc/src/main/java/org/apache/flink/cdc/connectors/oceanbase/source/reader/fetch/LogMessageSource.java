@@ -32,6 +32,7 @@ import com.oceanbase.clogproxy.client.config.ClientConf;
 import com.oceanbase.clogproxy.client.config.ObReaderConfig;
 import com.oceanbase.clogproxy.client.exception.LogProxyClientException;
 import com.oceanbase.clogproxy.client.listener.RecordListener;
+import com.oceanbase.clogproxy.client.util.ClientUtil;
 import com.oceanbase.oms.logmessage.DataMessage;
 import com.oceanbase.oms.logmessage.LogMessage;
 import io.debezium.data.Envelope;
@@ -101,7 +102,8 @@ public class LogMessageSource
                 : new TableId(null, dbName, message.getTableName());
     }
 
-    private static LogProxyClient createClient(OceanBaseConnectorConfig config, StreamSplit split) {
+    private static synchronized LogProxyClient createClient(
+            OceanBaseConnectorConfig config, StreamSplit split) {
         OceanBaseSourceConfig sourceConfig = config.getSourceConfig();
         ObReaderConfig obReaderConfig = new ObReaderConfig();
         if (StringUtils.isNotEmpty(sourceConfig.getRsList())) {
@@ -118,6 +120,7 @@ public class LogMessageSource
         obReaderConfig.setStartTimestamp(
                 Long.parseLong(((LogMessageOffset) split.getStartingOffset()).getTimestamp()));
         obReaderConfig.setTimezone(sourceConfig.getServerTimeZone());
+        obReaderConfig.setTableWhiteList(String.format("%s.*.*", sourceConfig.getTenantName()));
 
         if (sourceConfig.getObcdcProperties() != null
                 && !sourceConfig.getObcdcProperties().isEmpty()) {
@@ -131,6 +134,12 @@ public class LogMessageSource
         ClientConf clientConf =
                 ClientConf.builder()
                         .maxReconnectTimes(0)
+                        .clientId(
+                                String.format(
+                                        "%s_%s_%s",
+                                        ClientUtil.generateClientId(),
+                                        Thread.currentThread().getId(),
+                                        sourceConfig.getTenantName()))
                         .connectTimeoutMs((int) sourceConfig.getConnectTimeout().toMillis())
                         .build();
 
