@@ -195,7 +195,7 @@ public class OceanBaseMySQLModeSourceITCase extends OceanBaseTestBase {
                                 + " 'username' = '%s',"
                                 + " 'password' = '%s',"
                                 + " 'logproxy.host' = '%s',"
-                                + " 'logproxy.port' = '%s'"
+                                + " 'logproxy.port' = '%s',"
                                 + " 'working-mode' = 'memory',"
                                 + " 'tenant-name' = '%s',"
                                 + " 'compatible-mode' = '%s',"
