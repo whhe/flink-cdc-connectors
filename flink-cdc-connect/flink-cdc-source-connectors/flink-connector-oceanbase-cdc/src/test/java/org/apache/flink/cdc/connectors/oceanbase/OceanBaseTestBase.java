@@ -30,11 +30,11 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /** Basic class for testing OceanBase source. */
@@ -70,30 +70,40 @@ public abstract class OceanBaseTestBase extends AbstractTestBase {
     }
 
     public void initializeTable(String sqlFile) {
-        final String ddlFile = String.format("ddl/%s/%s.sql", getCompatibleMode(), sqlFile);
-        final URL ddlTestFile = getClass().getClassLoader().getResource(ddlFile);
-        assertNotNull("Cannot locate " + ddlFile, ddlTestFile);
         try (Connection connection = getJdbcConnection();
                 Statement statement = connection.createStatement()) {
-            final List<String> statements =
-                    Arrays.stream(
-                                    Files.readAllLines(Paths.get(ddlTestFile.toURI())).stream()
-                                            .map(String::trim)
-                                            .filter(x -> !x.startsWith("--") && !x.isEmpty())
-                                            .map(
-                                                    x -> {
-                                                        final Matcher m =
-                                                                COMMENT_PATTERN.matcher(x);
-                                                        return m.matches() ? m.group(1) : x;
-                                                    })
-                                            .collect(Collectors.joining("\n"))
-                                            .split(";"))
-                            .collect(Collectors.toList());
-            for (String stmt : statements) {
-                statement.execute(stmt);
-            }
+            execute(statement, sqlFile);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void execute(Statement statement, String sqlFileName) throws SQLException {
+        List<String> sqlText;
+        try {
+            final String sqlFilePath =
+                    String.format("ddl/%s/%s.sql", getCompatibleMode(), sqlFileName);
+            final URL sqlFile = getClass().getClassLoader().getResource(sqlFilePath);
+            sqlText = Files.readAllLines(Paths.get(Objects.requireNonNull(sqlFile).toURI()));
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        final List<String> statements =
+                Arrays.stream(
+                                sqlText.stream()
+                                        .map(String::trim)
+                                        .filter(x -> !x.startsWith("--") && !x.isEmpty())
+                                        .map(
+                                                x -> {
+                                                    final Matcher m = COMMENT_PATTERN.matcher(x);
+                                                    return m.matches() ? m.group(1) : x;
+                                                })
+                                        .collect(Collectors.joining("\n"))
+                                        .split(";"))
+                        .collect(Collectors.toList());
+        for (String stmt : statements) {
+            statement.execute(stmt);
         }
     }
 

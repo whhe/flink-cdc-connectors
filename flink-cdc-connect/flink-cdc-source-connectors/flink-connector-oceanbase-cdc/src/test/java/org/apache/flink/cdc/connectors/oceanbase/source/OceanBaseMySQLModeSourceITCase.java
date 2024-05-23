@@ -243,6 +243,8 @@ public class OceanBaseMySQLModeSourceITCase extends OceanBaseTestBase {
         try (Connection connection = getJdbcConnection();
                 Statement statement = connection.createStatement()) {
             statement.execute("CREATE DATABASE " + databaseName);
+            statement.execute("USE " + databaseName);
+            execute(statement, "customer");
         }
         return databaseName;
     }
