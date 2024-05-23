@@ -217,15 +217,16 @@ public class OceanBaseOffsetContext implements OffsetContext {
                             new OceanBaseSourceInfo(connectorConfig));
 
             String timestamp = (String) offset.get("timestamp");
-            Long trans = (Long) offset.get("trans");
-            Long events = (Long) offset.get("events");
+            String trans = (String) offset.get("trans");
+            String events = (String) offset.get("events");
+
             offsetContext.setCheckpoint(
                     timestamp == null
                             ? Instant.now()
                             : Instant.ofEpochSecond(Long.parseLong(timestamp)),
                     (String) offset.get("commit_version"),
-                    trans == null ? 0 : trans,
-                    events == null ? 0 : events);
+                    trans == null ? 0 : Long.parseLong(trans),
+                    events == null ? 0 : Long.parseLong(events));
             return offsetContext;
         }
 
