@@ -43,7 +43,9 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.test.junit5.MiniClusterExtension;
 import org.apache.flink.util.FlinkRuntimeException;
 
+import com.github.shyiko.mysql.binlog.BinaryLogClient;
 import io.debezium.connector.mysql.MySqlConnection;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -431,6 +433,43 @@ public class SpecificStartingOffsetITCase {
                         "+U[18213, George, Paris, 123456987]");
 
         restoredJobClient.cancel().get();
+    }
+
+    @Test()
+    void testFindBinlogOffsetWithInvalidServerId() throws Exception {
+        int serverId = 65535;
+
+        BinaryLogClient client = getBinaryLogClient();
+        client.setServerId(serverId);
+
+        Thread thread =
+                new Thread(
+                        () -> {
+                            try {
+                                client.connect();
+                            } catch (Exception e) {
+                                LOG.error("BinaryLogClient exception", e);
+                            }
+                        });
+        thread.start();
+
+        long t = System.currentTimeMillis();
+        Assertions.assertThatThrownBy(
+                        () ->
+                                DebeziumUtils.findBinlogOffset(
+                                        t,
+                                        connection,
+                                        getMySqlSourceConfig(t, String.valueOf(serverId))))
+                .isInstanceOf(RuntimeException.class);
+        client.disconnect();
+    }
+
+    private BinaryLogClient getBinaryLogClient() {
+        return new BinaryLogClient(
+                customDatabase.getHost(),
+                customDatabase.getDatabasePort(),
+                customDatabase.getUsername(),
+                customDatabase.getPassword());
     }
 
     private MySqlSourceBuilder<RowData> getSourceBuilder() {
